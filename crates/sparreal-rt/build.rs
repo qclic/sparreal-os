@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 fn main() {
     let config = Config::new();
@@ -13,7 +13,6 @@ fn main() {
 
     println!("cargo:rustc-link-search={}", config.out_dir.display());
     println!("cargo:rerun-if-changed=Link.ld");
-    // println!("cargo:rerun-if-changed=build.rs");
 }
 #[derive(Debug)]
 pub enum Arch {
@@ -43,7 +42,6 @@ struct Config {
 const DEFAULT_HART_STACK_SIZE: usize = 8 * 1024 * 1024;
 const KERNEL_VADDR: u64 = 0xffff_ff00_0008_0000;
 
-
 impl Config {
     fn new() -> Self {
         let arch = Arch::default();
@@ -66,10 +64,7 @@ impl Config {
 
         let ld_content = std::fs::read_to_string("Link.ld").unwrap();
         let ld_content = ld_content.replace("%ARCH%", &output_arch);
-        let ld_content = ld_content.replace(
-            "%KERNEL_VADDR%",
-            &format!("{:#x}", KERNEL_VADDR),
-        );
+        let ld_content = ld_content.replace("%KERNEL_VADDR%", &format!("{:#x}", KERNEL_VADDR));
         let ld_content =
             ld_content.replace("%STACK_SIZE%", &format!("{:#x}", self.hart_stack_size));
         let ld_content =

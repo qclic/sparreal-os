@@ -4,6 +4,7 @@ mod debug;
 mod mmu;
 mod psci;
 mod trap;
+mod context;
 
 use core::arch::asm;
 

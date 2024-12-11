@@ -19,6 +19,7 @@ pub mod time;
 pub mod trap;
 pub mod util;
 pub mod fdt;
+pub mod task;
 
 pub use kernel::{KernelConfig, MemoryRange};
 pub use mem::PhysAddr;
