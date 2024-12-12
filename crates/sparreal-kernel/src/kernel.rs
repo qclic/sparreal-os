@@ -10,7 +10,7 @@ use crate::{
     driver::{self, device_tree::set_dtb_addr},
     logger::KLogger,
     mem::{self, *},
-    platform::{self, app_main},
+    platform::{app_main, PlatformImpl},
     println,
     stdout::{self, EarlyDebugWrite},
 };
@@ -32,7 +32,7 @@ pub unsafe fn init_log_and_memory(kconfig: &KernelConfig) {
 
     let version = env!("CARGO_PKG_VERSION");
     println!("Welcome to sparreal\nVersion: {version}");
-    platform::print_system_info();
+    PlatformImpl::print_system_info();
 }
 
 /// 注册驱动
@@ -49,11 +49,11 @@ pub unsafe fn run() -> ! {
     spin_on(async {
         driver::init().await;
     });
-    platform::irqs_enable();
+    PlatformImpl::irqs_enable();
     app_main();
     println!("Waiting for interrupt...");
     loop {
-        platform::wait_for_interrupt();
+        PlatformImpl::wait_for_interrupt();
     }
 }
 

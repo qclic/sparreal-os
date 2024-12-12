@@ -3,7 +3,7 @@ use core::arch::asm;
 use aarch64_cpu::registers::*;
 use page_table_arm::{MAIRDefault, MAIRKind, MAIRSetting, PTEFlags, PTE};
 use page_table_generic::*;
-use sparreal_kernel::{dbg, platform::PlatformPageTable};
+use sparreal_kernel::{dbg, platform::PageTable};
 use sparreal_macros::api_impl;
 
 use super::boot::BOOT_INFO;
@@ -38,16 +38,13 @@ pub unsafe fn init_boot_table() -> u64 {
 pub struct PageTableImpl;
 
 #[api_impl]
-impl PlatformPageTable for PageTableImpl {
-    fn flush_tlb(addr: Option<*const u8>) {
-        unsafe {
-            if let Some(vaddr) = addr {
-                asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) vaddr as usize)
-            } else {
-                // flush the entire TLB
-                asm!("tlbi vmalle1; dsb nsh; isb")
-            };
-        }
+impl PageTable for PageTableImpl {
+    fn flush_tlb(addr: *const u8) {
+        unsafe { asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) addr as usize) };
+    }
+
+    fn flush_tlb_all() {
+        unsafe { asm!("tlbi vmalle1is; dsb nsh; isb") };
     }
 
     fn page_size() -> usize {
@@ -74,6 +71,8 @@ impl PlatformPageTable for PageTableImpl {
             CacheSetting::Normal => MAIRKind::Normal,
             CacheSetting::Device => MAIRKind::Device,
             CacheSetting::NonCache => MAIRKind::NonCache,
+            CacheSetting::ToDevice => MAIRKind::Device,
+            CacheSetting::FromDevice => MAIRKind::Device,
         }));
 
         let privilege = &config.setting.privilege_access;
@@ -176,7 +175,7 @@ impl PlatformPageTable for PageTableImpl {
 
     fn set_kernel_table(addr: usize) {
         TTBR1_EL1.set_baddr(addr as _);
-        Self::flush_tlb(None);
+        Self::flush_tlb_all();
     }
 
     fn get_kernel_table() -> usize {
@@ -185,7 +184,7 @@ impl PlatformPageTable for PageTableImpl {
 
     fn set_user_table(addr: usize) {
         TTBR0_EL1.set_baddr(addr as _);
-        Self::flush_tlb(None);
+        Self::flush_tlb_all();
     }
 
     fn get_user_table() -> usize {

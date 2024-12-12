@@ -7,7 +7,7 @@ fn main() {
     // // Put the linker script somewhere the linker can find it.
     config.gen_linker_script();
 
-    println!("cargo::rustc-check-cfg=hard_float");
+    println!("cargo::rustc-check-cfg=cfg(hard_float)");
     if env::var("TARGET").unwrap() == "aarch64-unknown-none" {
         println!("cargo::rustc-cfg=hard_float");
     }

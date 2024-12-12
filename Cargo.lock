@@ -12,6 +12,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "abi-singleton"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b460f8184ce14149dd05b5d5d44e0d0a3639b622d13d92cb9a9d46bac6b0398"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -673,9 +684,9 @@ dependencies = [
 
 [[package]]
 name = "page-table-generic"
-version = "0.2.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7021c5181b020f777dfd4b0ae239d2f4954323c88c810e657a8f9ab8c475b68"
+checksum = "734d342878ce1fd65c53078b17bc30adfb22e753c1bbe8f205d818837e9410f8"
 dependencies = [
  "bitflags",
  "log",
@@ -986,6 +997,7 @@ dependencies = [
 name = "sparreal-macros"
 version = "0.0.5"
 dependencies = [
+ "abi-singleton",
  "proc-macro2",
  "quote",
  "syn 2.0.90",

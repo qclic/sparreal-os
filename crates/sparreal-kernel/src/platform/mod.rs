@@ -36,17 +36,17 @@ pub trait Platform {
     fn irqs_enable();
     fn irqs_disable();
     fn cpu_id() -> u64;
-    fn cpu_id_display() -> String;
 }
 
 #[cfg(feature = "mmu")]
 #[api_trait]
-pub trait PlatformPageTable {
+pub trait PageTable {
     fn set_kernel_table(addr: usize);
     fn get_kernel_table() -> usize;
     fn set_user_table(addr: usize);
     fn get_user_table() -> usize;
-    fn flush_tlb(addr: Option<*const u8>);
+    fn flush_tlb(addr: *const u8);
+    fn flush_tlb_all();
     fn page_size() -> usize;
     fn table_level() -> usize;
     fn new_pte(config: PTEGeneric) -> usize;

@@ -1,15 +1,14 @@
 mod boot;
 mod cache;
+mod context;
 mod debug;
 mod mmu;
 mod psci;
 mod trap;
-mod context;
 
 use core::arch::asm;
 
 use aarch64_cpu::registers::*;
-use alloc::{format, string::String};
 use sparreal_kernel::{driver::device_tree::get_device_tree, platform::Platform, print, println};
 use sparreal_macros::api_impl;
 
@@ -59,15 +58,6 @@ impl Platform for PlatformImpl {
 
     fn cpu_id() -> u64 {
         MPIDR_EL1.get()
-    }
-    fn cpu_id_display() -> String {
-        format!(
-            "{}.{}.{}.{}",
-            MPIDR_EL1.read(MPIDR_EL1::Aff0),
-            MPIDR_EL1.read(MPIDR_EL1::Aff1),
-            MPIDR_EL1.read(MPIDR_EL1::Aff2),
-            MPIDR_EL1.read(MPIDR_EL1::Aff3)
-        )
     }
 }
 

@@ -2,7 +2,7 @@ pub use driver_interface::irq::*;
 use driver_interface::DriverKind;
 use log::info;
 
-use crate::{platform, struct_driver};
+use crate::{platform::PlatformImpl, struct_driver};
 
 use super::{irq_chip_list, probe_by_register, register_by_kind};
 
@@ -12,7 +12,7 @@ pub(super) async fn init_irq() {
     }
 
     for chip in irq_chip_list() {
-        info!("CPU {} IRQ init", unsafe { platform::cpu_id_display() });
+        info!("CPU {} IRQ init", PlatformImpl::cpu_id());
         chip.spec.read().current_cpu_setup();
         info!("IRQ chip init success!");
     }

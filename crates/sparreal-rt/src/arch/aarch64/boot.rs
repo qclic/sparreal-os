@@ -9,7 +9,7 @@ use fdt_parser::Fdt;
 use kernel::{BootConfig, MemoryReservedRange};
 use mem::*;
 use page_table_generic::{AccessSetting, CacheSetting};
-use platform::PlatformPageTable;
+use platform::PageTable;
 use sparreal_kernel::*;
 use tock_registers::interfaces::ReadWriteable;
 
@@ -92,7 +92,7 @@ unsafe extern "C" fn __rust_main(dtb_addr: usize, va_offset: usize) -> ! {
     TCR_EL1.write(TCR_EL1::IPS::Bits_48 + tcr_flags0 + tcr_flags1);
 
     // 需要先清缓存
-    PageTableImpl::flush_tlb(None);
+    PageTableImpl::flush_tlb_all();
 
     // Set both TTBR0 and TTBR1
     TTBR1_EL1.set_baddr(table);
@@ -113,7 +113,7 @@ unsafe extern "C" fn __rust_main(dtb_addr: usize, va_offset: usize) -> ! {
     if BOOT_INFO.as_ref().fdt_addr > 0 {
         BOOT_INFO.as_mut().fdt_addr += va_offset;
     }
-    PageTableImpl::flush_tlb(None);
+    PageTableImpl::flush_tlb_all();
     // Enable the MMU and turn on I-cache and D-cache
     SCTLR_EL1.modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
     barrier::isb(barrier::SY);

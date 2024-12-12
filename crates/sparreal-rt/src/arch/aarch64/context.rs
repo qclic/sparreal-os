@@ -1,6 +1,4 @@
-use core::arch::{asm, naked_asm};
-
-use sparreal_kernel::mem::VirtAddr;
+use core::arch::naked_asm;
 
 /// Saved registers when a trap (exception) occurs.
 #[repr(C)]

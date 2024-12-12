@@ -5,7 +5,7 @@ use driver_interface::uart;
 
 use crate::{
     driver::{DriverArc, DriverWeak},
-    platform,
+    platform::{self, PlatformImpl},
     sync::RwLock,
     util::boot::boot_debug_hex,
 };
@@ -57,7 +57,7 @@ impl Write for EarlyDebugWrite {
     fn write_str(&mut self, s: &str) -> Result<(), core::fmt::Error> {
         unsafe {
             s.bytes().for_each(|ch| {
-                platform::debug_write_byte(ch);
+                PlatformImpl::debug_write_byte(ch);
             });
         }
         Ok(())

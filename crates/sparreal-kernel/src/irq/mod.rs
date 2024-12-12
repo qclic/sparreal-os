@@ -4,7 +4,7 @@ use log::{debug, info, warn};
 
 use crate::{
     driver::{irq_chip_by_id_or_first, irq_chip_list, DriverIrqChip},
-    platform,
+    platform::PlatformImpl,
     sync::RwLock,
 };
 
@@ -44,7 +44,7 @@ impl Vector {
     }
 
     fn get_handle_stack(&self, irq_num: usize) -> Vec<Handler> {
-        let cpu_id = unsafe { platform::cpu_id() } as usize;
+        let cpu_id = unsafe { PlatformImpl::cpu_id() } as usize;
         self.0
             .get(&cpu_id)
             .and_then(|map| map.0.get(&irq_num))
@@ -62,7 +62,7 @@ pub fn irq_set_handle(
     handler: impl Fn(usize) -> IrqHandle + 'static,
 ) {
     let handler = Arc::new(handler);
-    vector_cpu_set_handle(unsafe { platform::cpu_id() } as _, irq_num, dev_id, handler);
+    vector_cpu_set_handle(PlatformImpl::cpu_id() as _, irq_num, dev_id, handler);
 }
 
 pub enum IrqHandle {

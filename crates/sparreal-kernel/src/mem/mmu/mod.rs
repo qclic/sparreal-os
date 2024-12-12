@@ -7,11 +7,9 @@ mod boot;
 mod table;
 
 use super::*;
-use crate::platform;
+use crate::platform::PageTableImpl;
 pub use boot::*;
 use table::{get_kernal_table, PageTableRef};
-
-
 
 struct BootInfo {
     va_offset: usize,
@@ -81,8 +79,8 @@ pub(crate) unsafe fn init_table(
         access,
     )?;
 
-    platform::set_kernel_table(table.paddr());
-    platform::set_user_table(0);
+    PageTableImpl::set_kernel_table(table.paddr());
+    PageTableImpl::set_user_table(0);
 
     debug!("Done!");
     Ok(())
@@ -109,7 +107,7 @@ pub fn iomap(paddr: PhysAddr, size: usize) -> NonNull<u8> {
             true,
             &mut heap_mut,
             Some(&|p| {
-                platform::flush_tlb(Some(p));
+                PageTableImpl::flush_tlb(p);
             }),
         );
 
