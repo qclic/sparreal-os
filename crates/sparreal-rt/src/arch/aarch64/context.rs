@@ -6,8 +6,8 @@ use sparreal_kernel::mem::VirtAddr;
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
-    /// General-purpose registers (R0..R30).
-    pub r: [u64; 31],
+    /// General-purpose registers (X0..X30).
+    pub x: [u64; 31],
     /// User Stack Pointer (SP_EL0).
     pub usp: u64,
     /// Exception Link Register (ELR_EL1).
@@ -17,7 +17,7 @@ pub struct TrapFrame {
 }
 
 /// FP & SIMD registers.
-#[cfg(target_feature = "neon")]
+#[cfg(hard_float)]
 #[repr(C, align(16))]
 #[derive(Debug, Default)]
 pub struct FpState {
@@ -43,27 +43,27 @@ pub struct FpState {
 #[allow(missing_docs)]
 #[repr(C)]
 #[derive(Debug)]
-pub struct TaskContext {
-    pub r19: u64,
-    pub r20: u64,
-    pub r21: u64,
-    pub r22: u64,
-    pub r23: u64,
-    pub r24: u64,
-    pub r25: u64,
-    pub r26: u64,
-    pub r27: u64,
-    pub r28: u64,
-    pub r29: u64,
+pub struct CpuContext {
+    pub x19: u64,
+    pub x20: u64,
+    pub x21: u64,
+    pub x22: u64,
+    pub x23: u64,
+    pub x24: u64,
+    pub x25: u64,
+    pub x26: u64,
+    pub x27: u64,
+    pub x28: u64,
+    pub fp: u64,
     pub sp: u64,
-    pub lr: u64,
-    #[cfg(target_feature = "neon")]
+    pub pc: u64,
+    #[cfg(hard_float)]
     pub fp_state: FpState,
 }
 
-const TASK_CONTEXT_SIZE: usize = size_of::<TaskContext>();
+const TASK_CONTEXT_SIZE: usize = size_of::<CpuContext>();
 
-impl TaskContext {
+impl CpuContext {
     /// Creates a new default context for a new task.
     pub const fn new() -> Self {
         unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
@@ -79,7 +79,7 @@ impl TaskContext {
 }
 
 #[naked]
-unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
+unsafe extern "C" fn context_switch(_current_task: &mut CpuContext, _next_task: &CpuContext) {
     naked_asm!(
         "
         mov  x9, sp
@@ -89,8 +89,8 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         stp  x25, x26, [x0], #16
         stp  x27, x28, [x0], #16
         stp  x29, x9,  [x0], #16
-        str  lr,  [x0]",
-        #[cfg(target_feature = "neon")]
+        str  lr,       [x0]",
+        #[cfg(hard_float)]
         "
         mrs     x9, fpcr
         mrs     x10, fpsr
@@ -118,9 +118,9 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         "ldp    x25, x26, [x1], #16",
         "ldp    x27, x28, [x1], #16",
         "ldp    x29, x9,  [x1], #16",
-        "ldr    lr,  [x1]",
+        "ldr    lr,       [x1]",
         "mov    sp,  x9",
-        #[cfg(target_feature = "neon")]
+        #[cfg(hard_float)]
         "
         ldp    q0,  q1,  [x1], #16
         ldp    q2,  q3,  [x1], #16
