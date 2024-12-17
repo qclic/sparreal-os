@@ -1,3 +1,5 @@
+use core::ffi::c_void;
+
 use alloc::string::String;
 use page_table_generic::PTEGeneric;
 use sparreal_macros::api_trait;
@@ -37,9 +39,11 @@ pub trait Platform {
     fn irqs_disable();
     fn cpu_id() -> u64;
 
-    fn get_current_tcb_addr() -> usize;
-    fn set_current_tcb_addr(addr: usize);
+    fn get_current_tcb_addr() -> *mut u8;
+    fn set_current_tcb_addr(addr: *mut u8);
     fn task_cpu_context_size() -> usize;
+    fn cpu_context_init(ctx_ptr: *mut u8, pc: *mut c_void, stack_top: *mut u8);
+    fn cpu_context_switch(prev: *mut u8, next: *mut u8);
 }
 
 #[cfg(feature = "mmu")]

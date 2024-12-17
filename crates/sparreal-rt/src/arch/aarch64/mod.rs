@@ -6,7 +6,7 @@ mod mmu;
 mod psci;
 mod trap;
 
-use core::arch::asm;
+use core::{arch::asm, ffi::c_void};
 
 use aarch64_cpu::registers::*;
 use context::CpuContext;
@@ -63,14 +63,28 @@ impl Platform for PlatformImpl {
         MPIDR_EL1.get() & CPU_ID_MASK
     }
 
-    fn get_current_tcb_addr() -> usize {
-        SP_EL0.get() as _
+    fn get_current_tcb_addr() -> *mut u8 {
+        SP_EL0.get() as usize as _
     }
-    fn set_current_tcb_addr(addr: usize) {
-        SP_EL0.set(addr as _);
+    fn set_current_tcb_addr(addr: *mut u8) {
+        SP_EL0.set(addr as usize as _);
     }
     fn task_cpu_context_size() -> usize {
         size_of::<CpuContext>()
+    }
+    fn cpu_context_init(ctx_ptr: *mut u8, pc: *mut c_void, stack_top: *mut u8) {
+        unsafe {
+            let ctx = &mut *(ctx_ptr as *mut CpuContext);
+            ctx.pc = pc as usize as _;
+            ctx.sp = stack_top as usize as _;
+        }
+    }
+    fn cpu_context_switch(prev: *mut u8, next: *mut u8) {
+        unsafe {
+            let prev = &mut *(prev as *mut CpuContext);
+            let next = &mut *(next as *mut CpuContext);
+            prev.switch_to(next);
+        }
     }
 }
 
