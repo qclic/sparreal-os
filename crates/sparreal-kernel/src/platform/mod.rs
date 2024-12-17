@@ -36,6 +36,10 @@ pub trait Platform {
     fn irqs_enable();
     fn irqs_disable();
     fn cpu_id() -> u64;
+
+    fn get_current_tcb_addr() -> usize;
+    fn set_current_tcb_addr(addr: usize);
+    fn task_cpu_context_size() -> usize;
 }
 
 #[cfg(feature = "mmu")]

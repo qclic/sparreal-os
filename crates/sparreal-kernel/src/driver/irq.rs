@@ -12,7 +12,7 @@ pub(super) async fn init_irq() {
     }
 
     for chip in irq_chip_list() {
-        info!("CPU {} IRQ init", PlatformImpl::cpu_id());
+        info!("CPU {:#x} IRQ init", PlatformImpl::cpu_id());
         chip.spec.read().current_cpu_setup();
         info!("IRQ chip init success!");
     }

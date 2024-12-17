@@ -9,8 +9,11 @@ mod trap;
 use core::arch::asm;
 
 use aarch64_cpu::registers::*;
+use context::CpuContext;
 use sparreal_kernel::{driver::device_tree::get_device_tree, platform::Platform, print, println};
 use sparreal_macros::api_impl;
+
+const CPU_ID_MASK: u64 = 0xFF_FFFF + (0xFFFF_FFFF << 32);
 
 pub struct PlatformImpl;
 
@@ -57,7 +60,17 @@ impl Platform for PlatformImpl {
     }
 
     fn cpu_id() -> u64 {
-        MPIDR_EL1.get()
+        MPIDR_EL1.get() & CPU_ID_MASK
+    }
+
+    fn get_current_tcb_addr() -> usize {
+        SP_EL0.get() as _
+    }
+    fn set_current_tcb_addr(addr: usize) {
+        SP_EL0.set(addr as _);
+    }
+    fn task_cpu_context_size() -> usize {
+        size_of::<CpuContext>()
     }
 }
 
