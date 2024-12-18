@@ -1,4 +1,10 @@
-use core::arch::naked_asm;
+use core::{
+    arch::{asm, naked_asm},
+    fmt::Debug,
+    option,
+};
+
+use log::debug;
 
 /// Saved registers when a trap (exception) occurs.
 #[repr(C)]
@@ -40,7 +46,6 @@ pub struct FpState {
 /// and the next task restores its context from memory to CPU.
 #[allow(missing_docs)]
 #[repr(C)]
-#[derive(Debug)]
 pub struct CpuContext {
     pub x19: u64,
     pub x20: u64,
@@ -59,6 +64,12 @@ pub struct CpuContext {
     pub fp_state: FpState,
 }
 
+impl Debug for CpuContext {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "CpuContext {{ x19: {:#x}, x20: {:#x}, x21: {:#x}, x22: {:#x}, x23: {:#x}, x24: {:#x}, x25: {:#x}, x26: {:#x}, x27: {:#x}, x28: {:#x}, fp:{:#x}, sp: {:#x}, pc: {:#x}}}", self.x19, self.x20, self.x21, self.x22, self.x23, self.x24, self.x25, self.x26, self.x27, self.x28, self.fp, self.sp, self.pc)
+    }
+}
+
 const TASK_CONTEXT_SIZE: usize = size_of::<CpuContext>();
 
 impl CpuContext {
@@ -72,10 +83,48 @@ impl CpuContext {
     /// It first saves the current task's context from CPU to this place, and then
     /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
+        debug!("switch_to {:?}", next_ctx);
         unsafe { context_switch(self, next_ctx) }
     }
 }
-
+#[naked]
+unsafe extern "C" fn context_save(_current_task: &mut CpuContext) {
+    naked_asm!(
+        "
+        mov  x9, sp
+        stp  x19, x20, [x0], #16
+        stp  x21, x22, [x0], #16
+        stp  x23, x24, [x0], #16
+        stp  x25, x26, [x0], #16
+        stp  x27, x28, [x0], #16
+        stp  x29, x9,  [x0], #16",
+        "str  lr,       [x0]",
+        #[cfg(hard_float)]
+        "
+        add     x0, x0, #8
+        mrs     x9, fpcr
+        mrs     x10, fpsr
+        stp     q0,  q1, [x0], #32
+        stp     q2,  q3, [x0], #32
+        stp     q4,  q5, [x0], #32
+        stp     q6,  q7, [x0], #32
+        stp     q8,  q9, [x0], #32
+        stp     q10, q11, [x0], #32
+        stp     q12, q13, [x0], #32
+        stp     q14, q15, [x0], #32
+        stp     q16, q17, [x0], #32
+        stp     q18, q19, [x0], #32
+        stp     q20, q21, [x0], #32
+        stp     q22, q23, [x0], #32
+        stp     q24, q25, [x0], #32
+        stp     q26, q27, [x0], #32
+        stp     q28, q29, [x0], #32
+        stp     q30, q31, [x0], #32
+        stp     x9,  x10, [x0]
+        ret
+        ",
+    )
+}
 #[naked]
 unsafe extern "C" fn context_switch(_current_task: &mut CpuContext, _next_task: &CpuContext) {
     naked_asm!(
@@ -90,13 +139,14 @@ unsafe extern "C" fn context_switch(_current_task: &mut CpuContext, _next_task: 
         str  lr,       [x0]",
         #[cfg(hard_float)]
         "
+        add     x0, x0, #8   // 对齐
         mrs     x9, fpcr
         mrs     x10, fpsr
-        stp     q0,  q1, [x0], #32
-        stp     q2,  q3, [x0], #32
-        stp     q4,  q5, [x0], #32
-        stp     q6,  q7, [x0], #32
-        stp     q8,  q9, [x0], #32
+        stp     q0,  q1,  [x0], #32
+        stp     q2,  q3,  [x0], #32
+        stp     q4,  q5,  [x0], #32
+        stp     q6,  q7,  [x0], #32
+        stp     q8,  q9,  [x0], #32
         stp     q10, q11, [x0], #32
         stp     q12, q13, [x0], #32
         stp     q14, q15, [x0], #32
@@ -120,23 +170,24 @@ unsafe extern "C" fn context_switch(_current_task: &mut CpuContext, _next_task: 
         "mov    sp,  x9",
         #[cfg(hard_float)]
         "
-        ldp    q0,  q1,  [x1], #16
-        ldp    q2,  q3,  [x1], #16
-        ldp    q4,  q5,  [x1], #16
-        ldp    q6,  q7,  [x1], #16
-        ldp    q8,  q9,  [x1], #16
-        ldp    q10, q11, [x1], #16
-        ldp    q12, q13, [x1], #16
-        ldp    q14, q15, [x1], #16
-        ldp    q16, q17, [x1], #16
-        ldp    q18, q19, [x1], #16
-        ldp    q20, q21, [x1], #16
-        ldp    q22, q23, [x1], #16
-        ldp    q24, q25, [x1], #16
-        ldp    q26, q27, [x1], #16
-        ldp    q28, q29, [x1], #16
-        ldp    q30, q31, [x1], #16
-        ldp    x8,  x9,  [x1], #16
+        add    x1,  x1,  #8  // 对齐
+        ldp    q0,  q1,  [x1], #32
+        ldp    q2,  q3,  [x1], #32
+        ldp    q4,  q5,  [x1], #32
+        ldp    q6,  q7,  [x1], #32
+        ldp    q8,  q9,  [x1], #32
+        ldp    q10, q11, [x1], #32
+        ldp    q12, q13, [x1], #32
+        ldp    q14, q15, [x1], #32
+        ldp    q16, q17, [x1], #32
+        ldp    q18, q19, [x1], #32
+        ldp    q20, q21, [x1], #32
+        ldp    q22, q23, [x1], #32
+        ldp    q24, q25, [x1], #32
+        ldp    q26, q27, [x1], #32
+        ldp    q28, q29, [x1], #32
+        ldp    q30, q31, [x1], #32
+        ldp    x9,  x10,  [x1]
         msr     fpcr, x9
         msr     fpsr, x10
         ",

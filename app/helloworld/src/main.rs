@@ -19,4 +19,17 @@ fn main() {
     // }
 
     assert_eq!(st, "hello world");
+
+    spawn_with_config(
+        || {
+            info!("hello task");
+        },
+        TaskConfig {
+            name: "hello".into(),
+            priority: 0,
+            stack_size: 0x1000,
+        },
+    );
+
+    info!("2222");
 }

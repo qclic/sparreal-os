@@ -23,7 +23,7 @@ unsafe extern "C" fn __handle_sync(tf: &TrapFrame) {
             }
             _ => {
                 panic!(
-                    "\r\n{}\r\nUnhandled synchronous exception @ {:#x}: ESR={:#x} (EC {:#08b}, ISS {:#x})",
+                    "\r\n{}\r\nUnhandled synchronous exception  @ {:#x}: ESR={:#x} (EC {:#08b}, ISS {:#x})",
                     tf,
                     elr,
                     esr.get(),

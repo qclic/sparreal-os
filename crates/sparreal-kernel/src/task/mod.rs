@@ -27,6 +27,8 @@ where
 {
     let task = TaskControlBlock::new(f, config)?;
 
+    tcb::current().switch_to(&task);
+
     Ok(())
 }
 
@@ -40,5 +42,5 @@ pub fn init() {
         },
     )
     .unwrap();
-    set_current(task);
+    set_current(&task);
 }
