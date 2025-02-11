@@ -2,6 +2,8 @@
 
 extern crate alloc;
 
+pub use fdt_parser as fdt;
+
 pub(crate) mod _macro;
 pub mod intc;
 pub mod io;

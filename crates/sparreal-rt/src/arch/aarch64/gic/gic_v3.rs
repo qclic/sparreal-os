@@ -2,9 +2,10 @@ use core::{cell::UnsafeCell, error::Error, ptr::NonNull};
 
 use alloc::{boxed::Box, format, sync::Arc, vec::Vec};
 use arm_gic_driver::{GicGeneric, GicV3, Trigger};
+use fdt_parser::Node;
 use sparreal_kernel::{
     driver_interface::{
-        DriverError, DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind, RegAddress,
+        DriverError, DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind,
         intc::{self, CpuId, InterfaceCPU},
     },
     mem::iomap,
@@ -75,11 +76,7 @@ impl InterfaceCPU for GicPerCpu {
         self.get_mut().set_priority(convert_id(irq), priority);
     }
 
-    fn set_trigger(
-        &mut self,
-        irq: intc::IrqId,
-        trigger: intc::Trigger,
-    ) {
+    fn set_trigger(&mut self, irq: intc::IrqId, trigger: intc::Trigger) {
         self.get_mut().set_trigger(
             convert_id(irq),
             match trigger {
@@ -131,11 +128,19 @@ impl intc::Interface for Gic {
     }
 }
 
-fn probe_gic(regs: &[RegAddress]) -> intc::Hardware {
-    let gicd_reg = regs[0];
-    let gicc_reg = regs[1];
-    let gicd = iomap(gicd_reg.addr.into(), gicd_reg.size.unwrap_or(0x1000));
-    let gicr = iomap(gicc_reg.addr.into(), gicc_reg.size.unwrap_or(0x1000));
+fn probe_gic(node: Node<'_>) -> Result<intc::Hardware, Box<dyn Error>> {
+    let mut reg = node.reg().ok_or(format!("[{}] has no reg", node.name))?;
 
-    Box::new(Gic::new(gicd, gicr))
+    let gicd_reg = reg.next().unwrap();
+    let gicc_reg = reg.next().unwrap();
+    let gicd = iomap(
+        (gicd_reg.address as usize).into(),
+        gicd_reg.size.unwrap_or(0x1000),
+    );
+    let gicr = iomap(
+        (gicc_reg.address as usize).into(),
+        gicc_reg.size.unwrap_or(0x1000),
+    );
+
+    Ok(Box::new(Gic::new(gicd, gicr)))
 }

@@ -1,11 +1,12 @@
 use alloc::{boxed::Box, format, sync::Arc, vec::Vec};
 use core::{cell::UnsafeCell, error::Error, ptr::NonNull};
+use fdt_parser::Node;
 
 use arm_gic_driver::GicGeneric;
 use sparreal_kernel::{
     driver_interface::{
-        DriverError, DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind, RegAddress,
-        intc::*,
+        DriverError, DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind,
+        intc::{self, *},
     },
     mem::iomap,
 };
@@ -18,7 +19,7 @@ module_driver!(
     probe_kinds: &[
         ProbeKind::Fdt {
             compatibles: &["arm,cortex-a15-gic", "arm,gic-400"],
-            on_probe: OnProbeKindFdt::InterruptController(probe_gic_v2)
+            on_probe: OnProbeKindFdt::InterruptController(probe_gic)
         },
     ] ,
 );
@@ -127,11 +128,19 @@ impl Interface for GicV2 {
     }
 }
 
-fn probe_gic_v2(regs: &[RegAddress]) -> Hardware {
-    let gicd_reg = regs[0];
-    let gicc_reg = regs[1];
-    let gicd = iomap(gicd_reg.addr.into(), gicd_reg.size.unwrap_or(0x1000));
-    let gicc = iomap(gicc_reg.addr.into(), gicc_reg.size.unwrap_or(0x1000));
+fn probe_gic(node: Node<'_>) -> Result<intc::Hardware, Box<dyn Error>> {
+    let mut reg = node.reg().ok_or(format!("[{}] has no reg", node.name))?;
 
-    Box::new(GicV2::new(gicd, gicc))
+    let gicd_reg = reg.next().unwrap();
+    let gicc_reg = reg.next().unwrap();
+    let gicd = iomap(
+        (gicd_reg.address as usize).into(),
+        gicd_reg.size.unwrap_or(0x1000),
+    );
+    let gicc = iomap(
+        (gicc_reg.address as usize).into(),
+        gicc_reg.size.unwrap_or(0x1000),
+    );
+
+    Ok(Box::new(GicV2::new(gicd, gicc)))
 }

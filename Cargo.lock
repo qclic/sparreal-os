@@ -255,6 +255,7 @@ name = "driver-interface"
 version = "0.4.0"
 dependencies = [
  "embedded-io",
+ "fdt-parser",
  "futures",
  "log",
 ]

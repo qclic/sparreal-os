@@ -13,3 +13,4 @@ categories = ["embedded", "no-std"]
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
 embedded-io = "0.6"
 log = "0.4"
+fdt-parser = "0.4"
