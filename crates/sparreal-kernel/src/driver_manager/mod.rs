@@ -8,7 +8,7 @@ use device::{
 use log::warn;
 
 pub use driver_interface::DriverRegister;
-use driver_interface::interrupt_controller;
+use driver_interface::intc;
 use spin::{Mutex, MutexGuard};
 
 #[macro_use]
@@ -61,7 +61,7 @@ fn registers() -> Vec<DriverRegister> {
     manager().registers.clone()
 }
 
-pub fn use_irq_chips_by(who: &str) -> Vec<BorrowGuard<interrupt_controller::Hardware>> {
+pub fn use_irq_chips_by(who: &str) -> Vec<BorrowGuard<intc::Hardware>> {
     manager()
         .irq_chip
         .list()

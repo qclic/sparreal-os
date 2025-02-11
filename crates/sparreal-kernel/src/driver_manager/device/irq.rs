@@ -6,9 +6,9 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-pub use driver_interface::interrupt_controller::Hardware;
+pub use driver_interface::intc::Hardware;
 use driver_interface::{
-    DriverRegister, OnProbeKindFdt, ProbeKind, RegAddress, interrupt_controller::IrqConfig,
+    DriverRegister, OnProbeKindFdt, ProbeKind, RegAddress, intc::IrqConfig,
 };
 use fdt_parser::Fdt;
 

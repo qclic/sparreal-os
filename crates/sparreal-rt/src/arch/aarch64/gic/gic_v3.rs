@@ -5,7 +5,7 @@ use arm_gic_driver::{GicGeneric, GicV3, Trigger};
 use sparreal_kernel::{
     driver_interface::{
         DriverError, DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind, RegAddress,
-        interrupt_controller::{self, CpuId, InterfaceCPU},
+        intc::{self, CpuId, InterfaceCPU},
     },
     mem::iomap,
 };
@@ -53,46 +53,46 @@ impl GicPerCpu {
 }
 
 impl InterfaceCPU for GicPerCpu {
-    fn get_and_acknowledge_interrupt(&mut self) -> Option<interrupt_controller::IrqId> {
+    fn get_and_acknowledge_interrupt(&mut self) -> Option<intc::IrqId> {
         self.get_mut()
             .get_and_acknowledge_interrupt()
             .map(|id| (id.to_u32() as usize).into())
     }
 
-    fn end_interrupt(&mut self, irq: interrupt_controller::IrqId) {
+    fn end_interrupt(&mut self, irq: intc::IrqId) {
         self.get_mut().end_interrupt(convert_id(irq));
     }
 
-    fn irq_enable(&mut self, irq: interrupt_controller::IrqId) {
+    fn irq_enable(&mut self, irq: intc::IrqId) {
         self.get_mut().irq_enable(convert_id(irq));
     }
 
-    fn irq_disable(&mut self, irq: interrupt_controller::IrqId) {
+    fn irq_disable(&mut self, irq: intc::IrqId) {
         self.get_mut().irq_disable(convert_id(irq));
     }
 
-    fn set_priority(&mut self, irq: interrupt_controller::IrqId, priority: usize) {
+    fn set_priority(&mut self, irq: intc::IrqId, priority: usize) {
         self.get_mut().set_priority(convert_id(irq), priority);
     }
 
     fn set_trigger(
         &mut self,
-        irq: interrupt_controller::IrqId,
-        trigger: interrupt_controller::Trigger,
+        irq: intc::IrqId,
+        trigger: intc::Trigger,
     ) {
         self.get_mut().set_trigger(
             convert_id(irq),
             match trigger {
-                interrupt_controller::Trigger::EdgeBoth => Trigger::Edge,
-                interrupt_controller::Trigger::EdgeRising => Trigger::Edge,
-                interrupt_controller::Trigger::EdgeFailling => Trigger::Edge,
-                interrupt_controller::Trigger::LevelHigh => Trigger::Level,
-                interrupt_controller::Trigger::LevelLow => Trigger::Level,
+                intc::Trigger::EdgeBoth => Trigger::Edge,
+                intc::Trigger::EdgeRising => Trigger::Edge,
+                intc::Trigger::EdgeFailling => Trigger::Edge,
+                intc::Trigger::LevelHigh => Trigger::Level,
+                intc::Trigger::LevelLow => Trigger::Level,
             },
         );
     }
 
-    fn set_bind_cpu(&mut self, irq: interrupt_controller::IrqId, cpu_list: &[CpuId]) {
+    fn set_bind_cpu(&mut self, irq: intc::IrqId, cpu_list: &[CpuId]) {
         let id_list = cpu_list
             .iter()
             .map(|v| arm_gic_driver::MPID::from(Into::<usize>::into(*v)))
@@ -121,8 +121,8 @@ impl DriverGeneric for Gic {
     }
 }
 
-impl interrupt_controller::Interface for Gic {
-    fn current_cpu_setup(&self) -> Box<dyn interrupt_controller::InterfaceCPU> {
+impl intc::Interface for Gic {
+    fn current_cpu_setup(&self) -> Box<dyn intc::InterfaceCPU> {
         unsafe { &mut *self.gic.get() }
             .as_mut()
             .unwrap()
@@ -131,7 +131,7 @@ impl interrupt_controller::Interface for Gic {
     }
 }
 
-fn probe_gic(regs: &[RegAddress]) -> interrupt_controller::Hardware {
+fn probe_gic(regs: &[RegAddress]) -> intc::Hardware {
     let gicd_reg = regs[0];
     let gicc_reg = regs[1];
     let gicd = iomap(gicd_reg.addr.into(), gicd_reg.size.unwrap_or(0x1000));

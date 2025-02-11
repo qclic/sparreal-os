@@ -5,7 +5,7 @@ use arm_gic_driver::GicGeneric;
 use sparreal_kernel::{
     driver_interface::{
         DriverError, DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind, RegAddress,
-        interrupt_controller::*,
+        intc::*,
     },
     mem::iomap,
 };

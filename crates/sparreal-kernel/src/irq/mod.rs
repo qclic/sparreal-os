@@ -1,7 +1,7 @@
 use core::{cell::UnsafeCell, error::Error};
 
 use alloc::{boxed::Box, collections::btree_map::BTreeMap, vec::Vec};
-use driver_interface::interrupt_controller::*;
+use driver_interface::intc::*;
 use log::{debug, error, warn};
 use spin::Mutex;
 
