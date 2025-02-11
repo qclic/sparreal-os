@@ -21,7 +21,7 @@ pub trait Interface: DriverGeneric {
     fn irq_enable(&mut self, irq: IrqId);
     fn irq_disable(&mut self, irq: IrqId);
     fn set_priority(&mut self, irq: IrqId, priority: usize);
-    fn set_trigger(&mut self, irq: IrqId, triger: Trigger);
+    fn set_trigger(&mut self, irq: IrqId, trigger: Trigger);
     fn set_target_cpu(&mut self, irq: IrqId, cpu: CpuId);
 }
 
