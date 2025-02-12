@@ -73,6 +73,10 @@ impl Container {
     pub fn list(&self) -> Vec<&Device<Hardware>> {
         self.0.values().collect()
     }
+
+    pub fn get(&self, id: DriverId) -> Option<Device<Hardware>> {
+        self.0.get(&id).cloned()
+    }
 }
 
 #[derive(Default, Debug, Clone)]

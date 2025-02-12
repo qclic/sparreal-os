@@ -98,12 +98,13 @@ checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 
 [[package]]
 name = "arm-gic-driver"
-version = "0.3.1"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea915a43d058031833f12ccf489e6024f368fe0df994dcd404e8abd234898623"
+checksum = "10d427efca5d3498c700b1ceee4de12903218cd963ffa3eae89dd688fd213a19"
 dependencies = [
  "aarch64-cpu",
  "bitflags",
+ "driver-interface 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_dispatch",
  "log",
  "tock-registers",
@@ -260,6 +261,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "driver-interface"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baac2363e2f2039998dedbf3877726689cc522fa37011f9602c6c3d8026b31ef"
+dependencies = [
+ "fdt-parser",
+ "futures",
+ "log",
+]
+
+[[package]]
 name = "embedded-io"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -311,9 +323,9 @@ dependencies = [
 
 [[package]]
 name = "fdt-parser"
-version = "0.4.7"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb6bb8f5b30e26fd1916a79f3655f9982c12b4d740aff65885851e7f078c1bf"
+checksum = "3863007a35c211c7c98521018eca226b07fea95a555eb08324ad55c4b2e50c18"
 
 [[package]]
 name = "fnv"
@@ -457,9 +469,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.20.2"
+version = "1.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
+checksum = "945462a4b81e43c4e3ba96bd7b49d834c6f61198356aa858733bc4acf3cbe62e"
 
 [[package]]
 name = "page-table-arm"
@@ -473,9 +485,9 @@ dependencies = [
 
 [[package]]
 name = "page-table-generic"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a415f145c89b8dc016e79a34ee5ba262708dd3c3f9ec33e2ae744e2bf9b16397"
+checksum = "827063f64bbad7b7655092b0f98824ffbe85e89646388eb4dad1e3d797056a2f"
 dependencies = [
  "bitflags",
  "log",
@@ -590,7 +602,7 @@ dependencies = [
  "buddy_system_allocator",
  "byte-unit",
  "dma-api",
- "driver-interface",
+ "driver-interface 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "fdt-parser",
  "lazy_static",
  "lock_api",

@@ -1,7 +1,7 @@
 use alloc::{string::String, vec::Vec};
 use core::ptr::NonNull;
 use device::{
-    BorrowGuard,
+    BorrowGuard, DriverId,
     irq::{self},
     timer,
 };
@@ -59,6 +59,9 @@ pub fn register_drivers(drivers: &[DriverRegister]) {
 
 fn registers() -> Vec<DriverRegister> {
     manager().registers.clone()
+}
+pub fn spin_use_intc(parent: DriverId, who: &str) -> BorrowGuard<intc::Hardware> {
+    manager().irq_chip.get(parent).unwrap().spin_try_use(who)
 }
 
 pub fn use_irq_chips_by(who: &str) -> Vec<BorrowGuard<intc::Hardware>> {
