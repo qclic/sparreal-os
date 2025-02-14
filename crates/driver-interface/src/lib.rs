@@ -14,6 +14,7 @@ pub use register::*;
 pub(crate) mod err;
 pub use err::{DriverError, DriverResult};
 pub use intc::IrqConfig;
+pub mod lock;
 
 pub trait DriverGeneric: Send {
     fn open(&mut self) -> DriverResult;

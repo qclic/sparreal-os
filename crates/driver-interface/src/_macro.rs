@@ -17,7 +17,7 @@ macro_rules! custom_type {
             }
         }
 
-        impl Debug for $name {
+        impl core::fmt::Debug for $name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 write!(f, $debug, self.0)
             }
