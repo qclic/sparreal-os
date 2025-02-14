@@ -1,7 +1,7 @@
 [package]
 name = "rdrive"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-driver-interface = { version = "0.4" }
+driver-interface = { version = "0.5" }

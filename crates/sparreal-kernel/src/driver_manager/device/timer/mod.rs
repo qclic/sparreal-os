@@ -65,7 +65,7 @@ pub fn init_by_fdt(
                                 None => continue,
                             };
 
-                            let timer = probe(&irq.cfgs);
+                            let timer = probe(node);
                             debug!("[{}] ok", r.name);
                             let dev = Device::new(
                                 Descriptor {

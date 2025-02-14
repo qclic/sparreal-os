@@ -1,7 +1,10 @@
 use aarch64_cpu::registers::*;
 use alloc::boxed::Box;
-use sparreal_kernel::driver_interface::{
-    DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind, intc::IrqConfig, timer::*,
+use sparreal_kernel::{
+    driver_interface::{
+        DriverGeneric, DriverResult, OnProbeKindFdt, ProbeKind, intc::IrqConfig, timer::*,
+    },
+    prelude::GetIrqConfig,
 };
 use sparreal_macros::module_driver;
 
@@ -68,8 +71,10 @@ impl DriverGeneric for ArmV8Timer {
     }
 }
 
-fn probe_timer(irqs: &[IrqConfig]) -> Hardware {
+fn probe_timer(node: Node) -> Hardware {
+    let irq = node.irq_info().unwrap();
+
     Box::new(ArmV8Timer {
-        irq: irqs[1].clone(),
+        irq: irq.cfgs[1].clone(),
     })
 }

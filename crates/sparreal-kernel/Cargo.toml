@@ -17,7 +17,7 @@ mmu = []
 log = "0.4"
 buddy_system_allocator = "0.11"
 sparreal-macros = { version = "0.7", path = "../sparreal-macros" }
-driver-interface = { version = "0.4" }
+driver-interface = { version = "0.5" }
 memory_addr = "0.3"
 page-table-generic = { version = "0.5" }
 fdt-parser = "0.4"
@@ -31,3 +31,4 @@ byte-unit = { version = "5.1", features = ["byte"], default-features = false }
 lazy_static = { version = "1.5", features = ["spin_no_std"] }
 thiserror = { version = "2", default-features = false }
 dma-api = "0.2"
+rdrive = { path = "../rdrive", version = "0.1" }

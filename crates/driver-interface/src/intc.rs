@@ -11,8 +11,8 @@ pub type OnProbeFdt = fn(crate::fdt::Node<'_>) -> Result<Hardware, Box<dyn Error
 pub type HardwareCPU = Box<dyn InterfaceCPU>;
 
 pub trait InterfaceCPU: Send + Sync {
-    fn get_and_acknowledge_interrupt(&mut self) -> Option<IrqId>;
-    fn end_interrupt(&mut self, irq: IrqId);
+    fn get_and_acknowledge_interrupt(&self) -> Option<IrqId>;
+    fn end_interrupt(&self, irq: IrqId);
     fn parse_fdt_config(&self, prop_interrupts: &[u32]) -> Result<IrqConfig, Box<dyn Error>>;
 }
 

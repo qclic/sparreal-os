@@ -14,4 +14,5 @@ page-table-arm = { path = "crates/page-table-arm" }
 driver-interface = { path = "crates/driver-interface" }
 bare-test = { path = "crates/bare-test" }
 bare-test-macros = { path = "crates/bare-test-macros" }
+rdrive = { path = "crates/rdrive" }
 log = "0.4"
