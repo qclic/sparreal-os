@@ -2,12 +2,13 @@ use alloc::collections::BTreeMap;
 use core::ops::{Deref, DerefMut};
 
 pub use descriptor::Descriptor;
-use descriptor::DeviceId;
+pub use descriptor::DeviceId;
 use driver_interface::lock::{Lock, LockGuard, LockWeak};
 pub use driver_interface::lock::{LockError, PId};
 
 mod descriptor;
 pub mod intc;
+
 
 pub struct Device<T> {
     pub descriptor: Descriptor,

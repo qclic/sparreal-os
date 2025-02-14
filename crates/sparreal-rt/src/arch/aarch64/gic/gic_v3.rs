@@ -19,7 +19,7 @@ module_driver!(
     ]
 );
 
-fn probe_gic(node: Node<'_>) -> Result<intc::Hardware, Box<dyn Error>> {
+fn probe_gic(node: Node<'_>) -> Result<intc::FdtProbeInfo, Box<dyn Error>> {
     let mut reg = node.reg().ok_or(format!("[{}] has no reg", node.name))?;
 
     let gicd_reg = reg.next().unwrap();
@@ -33,5 +33,8 @@ fn probe_gic(node: Node<'_>) -> Result<intc::Hardware, Box<dyn Error>> {
         gicc_reg.size.unwrap_or(0x1000),
     );
 
-    Ok(Box::new(Gic::new(gicd, gicr, Default::default())))
+    Ok(intc::FdtProbeInfo {
+        hardware: Box::new(Gic::new(gicd, gicr, Default::default())),
+        fdt_parse_config_fn: fdt_parse_irq_config,
+    })
 }

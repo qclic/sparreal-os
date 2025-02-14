@@ -31,9 +31,9 @@ pub fn init_by_fdt(
                             .filter_map(|e| if e.is_empty() { None } else { Some(*e) })
                             .collect::<Vec<_>>();
                         for node in fdt.find_compatible(&compa) {
-                            let mut irq = probe(node.clone())
+                            let mut info = probe(node.clone())
                                 .map_err(|e| format!("irq probe error: {e:?}"))?;
-                            irq.open().map_err(|e| format!("irq open error: {e:?}"))?;
+                            info.hardware.open().map_err(|e| format!("irq open error: {e:?}"))?;
                             let dev = Device::new(
                                 Descriptor {
                                     driver_id: node.phandle().unwrap().as_usize().into(),
