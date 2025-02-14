@@ -84,6 +84,9 @@ struct LockData<T> {
     data: UnsafeCell<T>,
 }
 
+unsafe impl<T: Send> Send for LockData<T> {}
+unsafe impl<T: Send> Sync for LockData<T> {}
+
 impl<T> LockData<T> {
     fn new(data: T) -> Self {
         LockData {
@@ -97,9 +100,6 @@ impl<T> LockData<T> {
 pub struct LockGuard<T> {
     data: Arc<LockData<T>>,
 }
-
-unsafe impl<T> Send for LockGuard<T> {}
-unsafe impl<T> Sync for LockGuard<T> {}
 
 impl<T> Drop for LockGuard<T> {
     fn drop(&mut self) {

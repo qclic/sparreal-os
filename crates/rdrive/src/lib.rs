@@ -8,3 +8,7 @@ mod manager;
 
 pub use device::*;
 pub use manager::*;
+use spin::Mutex;
+
+static MANAGER: Mutex<Manager> = Mutex::new(Manager::new());
+

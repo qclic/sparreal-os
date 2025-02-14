@@ -6,5 +6,10 @@ pub struct Manager {
 }
 
 impl Manager {
-    
+    pub const fn new() -> Self {
+        Self {
+            intc: device::Container::new(),
+        }
+    }
+           
 }

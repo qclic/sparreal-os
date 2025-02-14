@@ -95,6 +95,12 @@ pub struct Container<T> {
 }
 
 impl<T> Container<T> {
+    pub const fn new() -> Self {
+        Self {
+            data: BTreeMap::new(),
+        }
+    }
+
     pub fn insert(&mut self, dev: Device<T>) {
         self.data.insert(dev.descriptor.device_id, dev);
     }
