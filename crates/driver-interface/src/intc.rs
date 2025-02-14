@@ -7,13 +7,21 @@ custom_type!(IrqId, usize, "{:#x}");
 custom_type!(CpuId, usize, "{:#x}");
 
 pub type Hardware = Box<dyn Interface>;
-pub type OnProbeFdt = fn(crate::fdt::Node<'_>) -> Result<Hardware, Box<dyn Error>>;
+pub type OnProbeFdt = fn(node: crate::fdt::Node<'_>) -> Result<FdtProbeInfo, Box<dyn Error>>;
 pub type HardwareCPU = Box<dyn InterfaceCPU>;
+
+/// Fdt 解析 `interrupts` 函数，一次解析一个`cell`
+pub type FdtParseConfigFn =
+    fn(prop_interrupts_one_cell: &[u32]) -> Result<IrqConfig, Box<dyn Error>>;
+
+pub struct FdtProbeInfo {
+    pub hardware: Hardware,
+    pub fdt_parse_config_fn: FdtParseConfigFn,
+}
 
 pub trait InterfaceCPU: Send + Sync {
     fn get_and_acknowledge_interrupt(&self) -> Option<IrqId>;
     fn end_interrupt(&self, irq: IrqId);
-    fn parse_fdt_config(&self, prop_interrupts: &[u32]) -> Result<IrqConfig, Box<dyn Error>>;
 }
 
 pub trait Interface: DriverGeneric {

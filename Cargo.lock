@@ -104,7 +104,7 @@ checksum = "82ff94160f904e122e7a6233020400f4e0fa324fe37e92d111ee500aca035e80"
 dependencies = [
  "aarch64-cpu",
  "bitflags",
- "driver-interface 0.5.2",
+ "driver-interface 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_dispatch",
  "log",
  "tock-registers",
@@ -253,9 +253,7 @@ checksum = "13029088ff130c8eb6a35ff20410ebed5f6750507681bf3d90f74ba97032a407"
 
 [[package]]
 name = "driver-interface"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bce8d674e5d2eb8df43ed58dda71b17e7297b32acda2c37cb0309a71e515c8c"
+version = "0.5.3"
 dependencies = [
  "fdt-parser",
  "futures",
@@ -265,6 +263,8 @@ dependencies = [
 [[package]]
 name = "driver-interface"
 version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14ebfab01ba9870338ca3aa8d390ae999bc39c2d628e2dd382d44aec65971cb9"
 dependencies = [
  "fdt-parser",
  "futures",
@@ -534,7 +534,8 @@ dependencies = [
 name = "rdrive"
 version = "0.1.0"
 dependencies = [
- "driver-interface 0.5.2",
+ "driver-interface 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fdt-parser",
  "spin",
 ]
 
@@ -610,7 +611,7 @@ dependencies = [
  "buddy_system_allocator",
  "byte-unit",
  "dma-api",
- "driver-interface 0.5.2",
+ "driver-interface 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "fdt-parser",
  "lazy_static",
  "lock_api",
