@@ -143,7 +143,7 @@ impl Chip {
     }
 
     fn handle_irq(&self) -> Option<()> {
-        let chip = unsafe { &mut *self.device.force_use() };
+        let chip = unsafe { &*self.device.force_use() };
 
         let irq = chip.get_and_acknowledge_interrupt()?;
 

@@ -50,6 +50,14 @@ impl<T> Lock<T> {
             data: Arc::downgrade(&self.data),
         }
     }
+
+    /// 强制获取设备
+    ///
+    /// # Safety
+    /// 一般用于中断处理中
+    pub unsafe fn force_use(&self) -> *mut T {
+        self.data.data.get()
+    }
 }
 
 impl<T: Sync + Send> Deref for Lock<T> {
