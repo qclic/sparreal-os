@@ -1,6 +1,7 @@
 use core::cell::UnsafeCell;
 
-use alloc::{boxed::Box, collections::btree_map::BTreeMap};
+use alloc::{boxed::Box, collections::btree_map::BTreeMap, vec::Vec};
+pub use driver_interface::IrqConfig;
 use driver_interface::intc::*;
 use log::{debug, warn};
 pub use rdrive::Phandle;
@@ -99,7 +100,12 @@ impl IrqRegister {
         let chip = chip_cpu(irq_parent);
         chip.register_handle(irq, self.handler);
 
-        let mut c = driver_manager::spin_use_intc(irq_parent, "Kernel IRQ register");
+        let mut c = rdrive::edit(|m| m.intc.get(irq_parent))
+            .unwrap()
+            .upgrade()
+            .unwrap()
+            .spin_try_borrow_by(0.into());
+
         if let Some(p) = self.priority {
             c.set_priority(irq, p);
         } else {
@@ -136,9 +142,7 @@ impl Chip {
     }
 
     fn handle_irq(&self) -> Option<()> {
-        let chip = unsafe { &*self.device.force_use() };
-
-        let irq = chip.get_and_acknowledge_interrupt()?;
+        let irq = self.device.get_and_acknowledge_interrupt()?;
 
         if let Some(handler) = unsafe { &mut *self.handlers.get() }.get(&irq) {
             let res = (handler)(irq);
@@ -148,7 +152,7 @@ impl Chip {
         } else {
             warn!("IRQ {:?} no handler", irq);
         }
-        chip.end_interrupt(irq);
+        self.device.end_interrupt(irq);
         Some(())
     }
 }
@@ -187,6 +191,12 @@ pub fn handle_irq() -> usize {
     let cu = crate::task::current();
 
     cu.sp
+}
+
+#[derive(Debug, Clone)]
+pub struct IrqInfo {
+    pub irq_parent: DeviceId,
+    pub cfgs: Vec<IrqConfig>,
 }
 
 #[derive(Debug, Clone)]

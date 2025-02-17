@@ -1,17 +1,13 @@
 use core::time::Duration;
 
 use crate::{
-    driver_manager::{
-        self,
-        device::{BorrowGuard, Device},
-        manager,
-    },
     globals::{cpu_global, cpu_global_meybeuninit, cpu_global_mut, global_val},
     irq::{IrqHandleResult, IrqParam},
 };
 
 use driver_interface::{intc::IrqId, timer::*};
 use log::error;
+use rdrive::Device;
 
 #[derive(Default)]
 pub(crate) struct TimerData {

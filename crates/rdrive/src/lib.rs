@@ -13,7 +13,7 @@ mod device;
 pub mod error;
 mod id;
 mod manager;
-mod probe;
+pub mod probe;
 pub mod register;
 pub use device::*;
 pub use manager::*;
@@ -33,7 +33,7 @@ pub fn init(probe_kind: DriverInfoKind) {
     MANAGER.lock().replace(Manager::new(probe_kind));
 }
 
-fn write<F, T>(f: F) -> T
+pub fn edit<F, T>(f: F) -> T
 where
     F: FnOnce(&mut Manager) -> T,
 {
@@ -41,7 +41,7 @@ where
     f(g.as_mut().expect("manager not init"))
 }
 
-fn read<F, T>(f: F) -> T
+pub fn read<F, T>(f: F) -> T
 where
     F: FnOnce(&Manager) -> T,
 {
@@ -50,23 +50,23 @@ where
 }
 
 pub fn register_add(register: DriverRegister) {
-    write(|manager| manager.registers.add(register));
+    edit(|manager| manager.registers.add(register));
 }
 
 pub fn register_append(registers: &[DriverRegister]) {
-    write(|manager| manager.registers.append(registers))
+    edit(|manager| manager.registers.append(registers))
 }
 
 pub fn probe() -> Result<(), DriverError> {
-    write(|manager| manager.probe())
+    edit(|manager| manager.probe())
 }
 
 pub fn probe_intc() -> Result<(), DriverError> {
-    write(|manager| manager.probe_intc())
+    edit(|manager| manager.probe_intc())
 }
 
 pub fn probe_timer() -> Result<(), DriverError> {
-    write(|manager| manager.probe_timer())
+    edit(|manager| manager.probe_timer())
 }
 
 pub fn intc_all() -> Vec<(DeviceId, device::intc::Weak)> {

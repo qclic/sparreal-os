@@ -33,6 +33,7 @@ pub struct Timer {
 }
 
 unsafe impl Sync for Timer {}
+unsafe impl Send for Timer {}
 
 impl Timer {
     pub fn new(timer: HardwareCPU) -> Self {

@@ -1,7 +1,7 @@
-use alloc::{collections::BTreeMap, vec::Vec};
-use core::ptr::NonNull;
+use alloc::{boxed::Box, collections::BTreeMap, vec::Vec};
+use core::{error::Error, ptr::NonNull};
 
-use driver_interface::intc::FdtParseConfigFn;
+use driver_interface::{IrqConfig, intc::FdtParseConfigFn};
 use fdt_parser::{Fdt, Node, Phandle};
 
 use crate::{
@@ -25,6 +25,19 @@ impl ProbeData {
             phandle_2_irq_parse: Default::default(),
             fdt_addr,
         }
+    }
+
+    pub fn phandle_2_device_id(&self, phandle: Phandle) -> Option<DeviceId> {
+        self.phandle_2_device_id.get(&phandle).copied()
+    }
+
+    pub fn parse_irq(
+        &self,
+        parent: Phandle,
+        irq_cell: &[u32],
+    ) -> Result<IrqConfig, Box<dyn Error>> {
+        let f = self.phandle_2_irq_parse[&parent];
+        f(irq_cell)
     }
 
     pub fn probe(

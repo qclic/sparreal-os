@@ -15,7 +15,7 @@ pub struct Manager {
     pub registers: RegisterContainer,
     pub intc: device::intc::Container,
     pub timer: device::timer::Container,
-    probe_kind: ProbeData,
+    pub probe_kind: ProbeData,
 }
 
 impl Manager {

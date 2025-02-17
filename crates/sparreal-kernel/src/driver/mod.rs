@@ -21,3 +21,7 @@ pub fn init() {
 
     time::init_main_cpu();
 }
+
+pub fn probe() {
+    rdrive::probe().unwrap();
+}
