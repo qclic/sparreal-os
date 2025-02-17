@@ -1,5 +1,6 @@
 use alloc::{boxed::Box, collections::BTreeMap, vec::Vec};
 use core::{error::Error, ptr::NonNull};
+use log::debug;
 
 use driver_interface::{IrqConfig, intc::FdtParseConfigFn};
 use fdt_parser::{Fdt, Node, Phandle};
@@ -44,6 +45,8 @@ impl ProbeData {
         &mut self,
         registers: &[(usize, DriverRegister)],
     ) -> Result<Vec<ProbedDevice>, DriverError> {
+        debug!("fdt: {:p}", self.fdt_addr);
+
         let fdt = Fdt::from_ptr(self.fdt_addr)?;
         let registers = self.get_all_fdt_registers(registers, &fdt)?;
 

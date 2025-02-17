@@ -1,3 +1,4 @@
+use log::debug;
 use rdrive::DriverInfoKind;
 
 use crate::{globals::global_val, irq, platform, time};
@@ -12,6 +13,8 @@ pub fn init() {
     rdrive::init(info);
 
     rdrive::register_append(&platform::module_registers());
+
+    debug!("add registers");
 
     rdrive::probe_intc().unwrap();
 

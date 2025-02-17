@@ -1,7 +1,7 @@
 use core::error::Error;
 
 use alloc::{boxed::Box, format};
-use arm_gic_driver::v3::Gic;
+use arm_gic_driver::{fdt_parse_irq_config, v3::Gic};
 use fdt_parser::Node;
 use sparreal_kernel::{
     driver_interface::{OnProbeKindFdt, ProbeKind, intc},

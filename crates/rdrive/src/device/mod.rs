@@ -48,6 +48,14 @@ impl<T> Device<T> {
             }
         }
     }
+
+    /// 强制获取设备
+    ///
+    /// # Safety
+    /// 一般用于中断处理中
+    pub unsafe fn force_use(&self) -> *mut T {
+        unsafe { self.driver.force_use() }
+    }
 }
 
 impl<T: Sync + Send> Deref for Device<T> {

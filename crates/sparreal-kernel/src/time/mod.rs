@@ -6,8 +6,7 @@ use crate::{
 };
 
 use driver_interface::{intc::IrqId, timer::*};
-use log::error;
-use rdrive::Device;
+use rdrive::{Device, DeviceGuard};
 
 #[derive(Default)]
 pub(crate) struct TimerData {
@@ -19,34 +18,40 @@ pub fn since_boot() -> Duration {
 }
 
 fn _since_boot() -> Option<Duration> {
-    Some(cpu_global_meybeuninit()?.timer.timer.as_ref()?.since_boot())
+    let timer = cpu_global_meybeuninit()?.timer.timer.as_ref()?;
+    Some(timer.since_boot())
 }
 
 pub(crate) fn init_main_cpu() {
-    match &global_val().platform_info {
-        crate::globals::PlatformInfoKind::DeviceTree(fdt) => {
-            if let Err(e) = driver_manager::init_timer_by_fdt(fdt.get_addr()) {
-                error!("{}", e);
-            }
-        }
+    for (_, timer) in rdrive::read(|m| m.timer.all()) {
+        let mut t = timer.upgrade().unwrap().spin_try_borrow_by(0.into());
+        let cpu = t.get_current_cpu();
     }
 
     init_current_cpu();
 }
 
 pub(crate) fn init_current_cpu() -> Option<()> {
-    let timer = manager().timer.get_cpu_timer();
-    unsafe { cpu_global_mut().timer.timer = timer };
+    {
+        let mut ls = rdrive::read(|m| m.timer.all());
+        let (_, timer) = ls.pop()?;
 
+        let mut timer = timer.upgrade()?.spin_try_borrow_by(0.into());
+
+        unsafe {
+            cpu_global_mut().timer.timer = Some(Device::new(
+                timer.descriptor.clone(),
+                Timer::new(timer.get_current_cpu()),
+            ))
+        };
+    }
     let mut t = timer_write()?;
 
     t.set_irq_enable(false);
     t.enable();
 
-    let irq_chip = t.descriptor.irq.as_ref()?.irq_parent;
-
     IrqParam {
-        intc: irq_chip,
+        intc: t.descriptor.device_id,
         cfg: t.irq(),
     }
     .register_builder(irq_handle)
@@ -55,8 +60,8 @@ pub(crate) fn init_current_cpu() -> Option<()> {
     Some(())
 }
 
-fn timer_write() -> Option<BorrowGuard<Timer>> {
-    Some(timer_data().timer.as_ref()?.spin_try_use("Kernel"))
+fn timer_write() -> Option<DeviceGuard<Timer>> {
+    Some(timer_data().timer.as_ref()?.spin_try_borrow_by(0.into()))
 }
 fn irq_handle(_irq: IrqId) -> IrqHandleResult {
     let t = unsafe { &mut *timer_data().timer.as_ref().unwrap().force_use() };
