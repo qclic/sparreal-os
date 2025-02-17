@@ -86,7 +86,7 @@ impl Manager {
         self.probe_with(&ls)
     }
 
-    fn probe_with<'a>(&mut self, registers: &[(usize, DriverRegister)]) -> Result<(), DriverError> {
+    fn probe_with(&mut self, registers: &[(usize, DriverRegister)]) -> Result<(), DriverError> {
         let probed_list = match &mut self.probe_kind {
             ProbeData::Fdt(probe_data) => probe_data.probe(registers)?,
             ProbeData::Static => Vec::new(),
