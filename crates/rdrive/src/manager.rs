@@ -1,113 +1,110 @@
-use alloc::collections::BTreeMap;
-use core::ptr::NonNull;
+use alloc::vec::Vec;
 
 use crate::{
-    Device, DeviceId,
-    register::{DriverRegister, OnProbeKindFdt},
+    DeviceKind, DriverInfoKind, DriverRegister,
+    probe::ProbeData,
+    register::{OnProbeKindFdt, ProbeKind, RegisterContainer},
 };
-use alloc::{string::*, vec::Vec};
-use fdt_parser::{Fdt, Node};
 
-use crate::{error::DriverError, register::ProbeKind};
+use crate::error::DriverError;
 
 use super::device;
 
 #[derive(Default)]
 pub struct Manager {
-    registers: Vec<DriverRegister>,
+    pub registers: RegisterContainer,
     pub intc: device::intc::Container,
+    pub timer: device::timer::Container,
+    probe_kind: ProbeData,
 }
 
 impl Manager {
-    pub const fn new() -> Self {
+    pub fn new(driver_info_kind: DriverInfoKind) -> Self {
         Self {
-            registers: Vec::new(),
-            intc: device::Container::new(),
+            probe_kind: driver_info_kind.into(),
+            ..Default::default()
         }
     }
 
-    pub fn append_register(&mut self, register: &[DriverRegister]) {
-        self.registers.extend_from_slice(register);
-    }
-
-    pub fn add_register(&mut self, register: DriverRegister) {
-        self.registers.push(register);
-    }
-
-    fn probe_by_fdt(&mut self, fdt: NonNull<u8>) -> Result<(), DriverError> {
-        let fdt = fdt_parser::Fdt::from_ptr(fdt)?;
-        let registers = self.get_all_fdt_registers(&fdt)?;
-        let mut irq_parse = BTreeMap::new();
-
-        for register in registers {
-            match register.on_probe {
-                OnProbeKindFdt::InterruptController(on_probe) => {
-                    let info = on_probe(register.node.clone())?;
-                    irq_parse.insert(
-                        register
-                            .phandle
-                            .ok_or(DriverError::Fdt("intc no phandle".to_string()))?,
-                        info.fdt_parse_config_fn,
-                    );
-                    self.intc
-                        .insert(Device::new(register.descriptor, info.hardware));
-                }
-                OnProbeKindFdt::Timer(on_probe) => todo!(),
-            }
-        }
-
-        Ok(())
-    }
-
-    fn get_all_fdt_registers<'a>(
-        &self,
-        fdt: &'a Fdt<'_>,
-    ) -> Result<Vec<ProbeFdtInfo<'a>>, DriverError> {
-        let mut vec = Vec::new();
-        for node in fdt.all_nodes() {
-            for register in self.registers.clone() {
-                for probe in register.probe_kinds {
-                    match probe {
+    pub fn probe_intc(&mut self) -> Result<(), DriverError> {
+        let ls = self
+            .registers
+            .unregistered()
+            .into_iter()
+            .filter(|(_, e)| {
+                let mut has = false;
+                for kind in e.probe_kinds {
+                    match kind {
                         ProbeKind::Fdt {
-                            compatibles,
+                            compatibles: _,
                             on_probe,
                         } => {
-                            if let Some(node_campatibles) = node.compatible() {
-                                for campatible in node_campatibles {
-                                    if let Ok(campatible) = campatible {
-                                        if compatibles.contains(&campatible) {
-                                            vec.push(ProbeFdtInfo {
-                                                node: node.clone(),
-                                                on_probe: on_probe.clone(),
-                                                descriptor: device::Descriptor {
-                                                    name: register.name,
-                                                    device_id: DeviceId::new(),
-                                                    ..Default::default()
-                                                },
-                                                phandle: node.phandle().map(|p| p.as_usize()),
-                                            });
-                                        }
-                                    }
-                                }
+                            if matches!(on_probe, OnProbeKindFdt::Intc(_)) {
+                                has = true;
+                                break;
                             }
                         }
                     }
                 }
+                has
+            })
+            .collect::<Vec<_>>();
+
+        self.probe_with(&ls)
+    }
+
+    pub fn probe_timer(&mut self) -> Result<(), DriverError> {
+        let ls = self
+            .registers
+            .unregistered()
+            .into_iter()
+            .filter(|(_, e)| {
+                let mut has = false;
+                for kind in e.probe_kinds {
+                    match kind {
+                        ProbeKind::Fdt {
+                            compatibles: _,
+                            on_probe,
+                        } => {
+                            if matches!(on_probe, OnProbeKindFdt::Timer(_)) {
+                                has = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                has
+            })
+            .collect::<Vec<_>>();
+
+        self.probe_with(&ls)
+    }
+
+    pub fn probe(&mut self) -> Result<(), DriverError> {
+        let ls = self.registers.unregistered();
+
+        self.probe_with(&ls)
+    }
+
+    fn probe_with<'a>(&mut self, registers: &[(usize, DriverRegister)]) -> Result<(), DriverError> {
+        let probed_list = match &mut self.probe_kind {
+            ProbeData::Fdt(probe_data) => probe_data.probe(registers)?,
+            ProbeData::Static => Vec::new(),
+        };
+
+        for probed in probed_list {
+            match probed.kind {
+                DeviceKind::Intc(device) => {
+                    self.intc.insert(device);
+                }
+                DeviceKind::Timer(device) => {
+                    self.timer.insert(device);
+                }
             }
+
+            self.registers.set_probed(probed.register_id);
         }
 
-        Ok(vec)
+        Ok(())
     }
-}
-
-struct ProbeIterFdt<'a> {
-    m: &'a mut Manager,
-    fdt: fdt_parser::Fdt<'a>,
-}
-
-struct ProbeFdtInfo<'a> {
-    node: Node<'a>,
-    on_probe: OnProbeKindFdt,
-    descriptor: device::Descriptor,
-    phandle: Option<usize>,
 }

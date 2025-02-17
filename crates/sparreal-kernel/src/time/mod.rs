@@ -50,7 +50,7 @@ pub(crate) fn init_current_cpu() -> Option<()> {
     let irq_chip = t.descriptor.irq.as_ref()?.irq_parent;
 
     IrqParam {
-        irq_chip,
+        intc: irq_chip,
         cfg: t.irq(),
     }
     .register_builder(irq_handle)

@@ -1,4 +1,4 @@
-pub use driver_interface::DriverRegisterSlice;
+pub use rdrive::DriverRegisterSlice;
 use sparreal_macros::api_trait;
 
 use crate::mem::KernelRegions;

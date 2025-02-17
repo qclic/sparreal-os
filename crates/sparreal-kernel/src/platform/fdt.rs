@@ -7,7 +7,6 @@ use core::{
 use fdt_parser::{Node, Pci};
 use log::error;
 
-use crate::driver_manager::device::DriverId;
 use crate::globals::{self, global_val};
 use crate::irq::IrqInfo;
 use crate::mem::{Align, VirtAddr};

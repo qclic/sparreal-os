@@ -3,8 +3,8 @@ use alloc::vec::Vec;
 use core::ffi::CStr;
 use core::ops::Range;
 use core::ptr::NonNull;
-use driver_interface::DriverRegister;
 use driver_interface::intc::CpuId;
+use rdrive::DriverRegister;
 
 use crate::globals::global_val;
 use crate::mem::PhysAddr;
@@ -186,4 +186,12 @@ impl SerialPort {
 
 pub fn module_registers() -> Vec<DriverRegister> {
     PlatformImpl::driver_registers().as_slice().to_vec()
+}
+
+pub fn driver_probe() {
+    match &global_val().platform_info {
+        PlatformInfoKind::DeviceTree(fdt) => {
+            rdrive::probe_by_fdt(fdt.get_addr()).unwrap();
+        }
+    }
 }

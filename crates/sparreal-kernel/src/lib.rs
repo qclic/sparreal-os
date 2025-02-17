@@ -6,11 +6,12 @@ extern crate alloc;
 
 pub mod __export;
 pub mod boot;
-mod driver_manager;
+// mod driver_manager;
 pub mod globals;
 pub mod io;
 
 pub mod async_std;
+mod driver;
 pub mod irq;
 mod lang_items;
 mod logger;

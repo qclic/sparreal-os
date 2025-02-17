@@ -4,7 +4,6 @@ use ansi_rgb::{Foreground, orange};
 use log::LevelFilter;
 
 use crate::{
-    driver_manager,
     globals::{self, global_val},
     io::{self, print::*},
     irq,
@@ -42,7 +41,9 @@ pub extern "C" fn __start() -> ! {
 
     unsafe { globals::setup_percpu() };
 
-    driver_manager::register_drivers(&module_registers());
+    rdrive::register_append(&module_registers());
+
+    platform::driver_probe();
 
     irq::init_main_cpu();
 

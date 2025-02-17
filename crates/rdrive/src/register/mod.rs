@@ -1,6 +1,8 @@
-use core::ops::Deref;
+use alloc::collections::BTreeSet;
+use alloc::{boxed::Box, vec::Vec};
+use core::{error::Error, ops::Deref};
 
-use driver_interface::intc::FdtParseConfigFn;
+use driver_interface::{IrqConfig, intc::FdtParseConfigFn};
 pub use fdt_parser::Node;
 
 pub mod intc;
@@ -27,9 +29,28 @@ pub struct FdtInfo<'a> {
     pub irq_parse: FdtParseConfigFn,
 }
 
+impl FdtInfo<'_> {
+    pub fn node_irqs(&self) -> Result<Vec<IrqConfig>, Box<dyn Error>> {
+        let irqs = match self.node.interrupts() {
+            Some(i) => i,
+            None => return Ok(Vec::new()),
+        };
+
+        let irqs = irqs.map(|one| one.collect::<Vec<_>>()).collect::<Vec<_>>();
+
+        let mut out = Vec::with_capacity(irqs.len());
+
+        for irq_raw in irqs {
+            out.push((self.irq_parse)(&irq_raw)?);
+        }
+
+        Ok(out)
+    }
+}
+
 #[derive(Clone)]
 pub enum OnProbeKindFdt {
-    InterruptController(intc::OnProbeFdt),
+    Intc(intc::OnProbeFdt),
     Timer(timer::OnProbeFdt),
 }
 
@@ -59,5 +80,41 @@ impl Deref for DriverRegisterSlice {
 
     fn deref(&self) -> &Self::Target {
         self.as_slice()
+    }
+}
+
+#[derive(Default)]
+pub struct RegisterContainer {
+    registers: Vec<DriverRegister>,
+    probed_index: BTreeSet<usize>,
+}
+
+impl RegisterContainer {
+    pub const fn new() -> Self {
+        Self {
+            registers: Vec::new(),
+            probed_index: BTreeSet::new(),
+        }
+    }
+
+    pub fn add(&mut self, register: DriverRegister) {
+        self.registers.push(register);
+    }
+
+    pub fn append(&mut self, register: &[DriverRegister]) {
+        self.registers.extend_from_slice(register);
+    }
+
+    pub fn set_probed(&mut self, register_idx: usize) {
+        self.probed_index.insert(register_idx);
+    }
+
+    pub fn unregistered(&self) -> Vec<(usize, DriverRegister)> {
+        self.registers
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| !self.probed_index.contains(i))
+            .map(|(i, r)| (i, r.clone()))
+            .collect()
     }
 }

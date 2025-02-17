@@ -1,4 +1,4 @@
-use alloc::collections::BTreeMap;
+use alloc::{collections::BTreeMap, vec::Vec};
 use core::ops::{Deref, DerefMut};
 
 pub use descriptor::Descriptor;
@@ -8,7 +8,7 @@ pub use driver_interface::lock::{LockError, PId};
 
 mod descriptor;
 pub mod intc;
-
+pub mod timer;
 
 pub struct Device<T> {
     pub descriptor: Descriptor,
@@ -109,6 +109,10 @@ impl<T> Container<T> {
     pub fn get(&self, id: DeviceId) -> Option<DeviceWeak<T>> {
         self.data.get(&id).map(|o| o.weak())
     }
+
+    pub fn all(&self) -> Vec<(DeviceId, DeviceWeak<T>)> {
+        self.data.iter().map(|(i, o)| (*i, o.weak())).collect()
+    }
 }
 
 impl<T> Default for Container<T> {
@@ -117,4 +121,14 @@ impl<T> Default for Container<T> {
             data: Default::default(),
         }
     }
+}
+
+pub struct ProbedDevice {
+    pub register_id: usize,
+    pub kind: DeviceKind,
+}
+
+pub enum DeviceKind {
+    Intc(Device<intc::Hardware>),
+    Timer(Device<timer::Hardware>),
 }

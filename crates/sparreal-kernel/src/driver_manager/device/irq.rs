@@ -33,7 +33,9 @@ pub fn init_by_fdt(
                         for node in fdt.find_compatible(&compa) {
                             let mut info = probe(node.clone())
                                 .map_err(|e| format!("irq probe error: {e:?}"))?;
-                            info.hardware.open().map_err(|e| format!("irq open error: {e:?}"))?;
+                            info.hardware
+                                .open()
+                                .map_err(|e| format!("irq open error: {e:?}"))?;
                             let dev = Device::new(
                                 Descriptor {
                                     driver_id: node.phandle().unwrap().as_usize().into(),

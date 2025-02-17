@@ -323,9 +323,9 @@ dependencies = [
 
 [[package]]
 name = "fdt-parser"
-version = "0.4.9"
+version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3863007a35c211c7c98521018eca226b07fea95a555eb08324ad55c4b2e50c18"
+checksum = "f6ce5f2349481622d853a132241a102974317337ec643670a830e4194cb71181"
 
 [[package]]
 name = "fnv"
