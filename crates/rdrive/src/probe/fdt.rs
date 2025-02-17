@@ -115,6 +115,7 @@ impl ProbeData {
         let mut vec = Vec::new();
 
         for node in fdt.all_nodes() {
+            debug!("node: {}", node.name);
             for (i, register) in registers {
                 for probe in register.probe_kinds {
                     match probe {
