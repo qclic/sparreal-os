@@ -142,9 +142,9 @@ fn parse_irq_config(parent: Phandle, interrupts: &[Vec<u32>]) -> Option<IrqInfo>
         match rdrive::read(|m| match &m.probe_kind {
             ProbeData::Fdt(probe_data) => {
                 irq_parent = probe_data.phandle_2_device_id(parent);
-                Some(probe_data.parse_irq(parent, &raw))
+                Some(probe_data.parse_irq(parent, raw))
             }
-            ProbeData::Static => return None,
+            ProbeData::Static => None,
         }) {
             Some(Ok(cfg)) => cfgs.push(cfg),
             _ => continue,
@@ -152,7 +152,7 @@ fn parse_irq_config(parent: Phandle, interrupts: &[Vec<u32>]) -> Option<IrqInfo>
     }
 
     Some(IrqInfo {
-        irq_parent: irq_parent.unwrap(),
+        irq_parent: irq_parent?,
         cfgs,
     })
 }

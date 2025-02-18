@@ -9,7 +9,7 @@ members = [
     "crates/sparreal-kernel",
     "crates/sparreal-macros",
     "crates/sparreal-rt",
-    "crates/rdrive/*",
+    "crates/rdrive/*", "crates/xtask",
 ]
 
 [workspace.package]
