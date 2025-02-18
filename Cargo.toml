@@ -1,6 +1,16 @@
 [workspace]
 resolver = "2"
-members = ["app/*", "crates/*"]
+members = [
+    "app/*",
+    "crates/bare-test",
+    "crates/bare-test-macros",
+    "crates/driver-interface",
+    "crates/page-table-arm",
+    "crates/sparreal-kernel",
+    "crates/sparreal-macros",
+    "crates/sparreal-rt",
+    "crates/rdrive/*",
+]
 
 [workspace.package]
 version = "0.7.0"
@@ -14,5 +24,8 @@ page-table-arm = { path = "crates/page-table-arm" }
 driver-interface = { path = "crates/driver-interface" }
 bare-test = { path = "crates/bare-test" }
 bare-test-macros = { path = "crates/bare-test-macros" }
-rdrive = { path = "crates/rdrive" }
 log = "0.4"
+
+
+[workspace.metadata]
+rdrive_version = "0.1.0"

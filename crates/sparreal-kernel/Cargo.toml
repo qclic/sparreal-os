@@ -31,4 +31,4 @@ byte-unit = { version = "5.1", features = ["byte"], default-features = false }
 lazy_static = { version = "1.5", features = ["spin_no_std"] }
 thiserror = { version = "2", default-features = false }
 dma-api = "0.2"
-rdrive = { path = "../rdrive", version = "0.1" }
+rdrive = { path = "../rdrive/rdrive", version = "0.1" }

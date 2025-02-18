@@ -1,7 +1,7 @@
 use core::time::Duration;
 
 use crate::{
-    globals::{cpu_global, cpu_global_meybeuninit, cpu_global_mut, global_val},
+    globals::{cpu_global, cpu_global_meybeuninit, cpu_global_mut},
     irq::{IrqHandleResult, IrqParam},
 };
 
@@ -20,15 +20,6 @@ pub fn since_boot() -> Duration {
 fn _since_boot() -> Option<Duration> {
     let timer = cpu_global_meybeuninit()?.timer.timer.as_ref()?;
     Some(timer.since_boot())
-}
-
-pub(crate) fn init_main_cpu() {
-    for (_, timer) in rdrive::read(|m| m.timer.all()) {
-        let mut t = timer.upgrade().unwrap().spin_try_borrow_by(0.into());
-        let cpu = t.get_current_cpu();
-    }
-
-    init_current_cpu();
 }
 
 pub(crate) fn init_current_cpu() -> Option<()> {

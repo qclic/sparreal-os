@@ -22,7 +22,7 @@ pub fn init() {
 
     rdrive::probe_timer().unwrap();
 
-    time::init_main_cpu();
+    time::init_current_cpu();
 }
 
 pub fn probe() {

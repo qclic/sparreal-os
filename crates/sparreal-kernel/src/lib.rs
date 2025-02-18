@@ -6,7 +6,6 @@ extern crate alloc;
 
 pub mod __export;
 pub mod boot;
-// mod driver_manager;
 pub mod globals;
 pub mod io;
 

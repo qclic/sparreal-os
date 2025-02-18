@@ -5,9 +5,7 @@ use core::{
     ptr::{NonNull, slice_from_raw_parts, slice_from_raw_parts_mut},
 };
 use fdt_parser::{Node, Pci};
-use log::debug;
-use rdrive::Phandle;
-use rdrive::probe::ProbeData;
+use rdrive::{Phandle, probe::ProbeData};
 
 use crate::globals::{self, global_val};
 use crate::irq::IrqInfo;
