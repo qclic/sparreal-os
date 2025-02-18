@@ -1,8 +1,8 @@
 use alloc::boxed::Box;
 use core::error::Error;
 
-pub use driver_interface::intc::{FdtParseConfigFn, Hardware};
-use fdt_parser::Node;
+pub use crate::intc::{FdtParseConfigFn, Hardware};
+pub use fdt_parser::Node;
 
 pub type OnProbeFdt = fn(node: Node<'_>) -> Result<FdtProbeInfo, Box<dyn Error>>;
 

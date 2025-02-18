@@ -98,15 +98,15 @@ checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 
 [[package]]
 name = "arm-gic-driver"
-version = "0.5.2"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bdc8012ea6c2fba4b77b23a93ce513e6b0c5aba90d96a532340b1ce96a74d2d"
+checksum = "89c6858a856f5376a59472cd97a2c8155e4a4e40baf3321b2c072970d98374d6"
 dependencies = [
  "aarch64-cpu",
  "bitflags",
- "driver-interface 0.5.5",
  "enum_dispatch",
  "log",
+ "rdif-intc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tock-registers",
 ]
 
@@ -250,17 +250,6 @@ name = "dma-api"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13029088ff130c8eb6a35ff20410ebed5f6750507681bf3d90f74ba97032a407"
-
-[[package]]
-name = "driver-interface"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfaff4b8012e82adaa5e38658b2db3c306f4b318b49370e8e70bc5a50338d86b"
-dependencies = [
- "fdt-parser",
- "futures",
- "log",
-]
 
 [[package]]
 name = "driver-interface"
@@ -534,17 +523,41 @@ name = "rdif-base"
 version = "0.1.2"
 
 [[package]]
+name = "rdif-base"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce9090d968a27bbfc80749ee351c476577230b10211decb813111300d8dfd9b4"
+
+[[package]]
 name = "rdif-intc"
 version = "0.1.1"
 dependencies = [
- "rdif-base",
+ "rdif-base 0.1.2",
+]
+
+[[package]]
+name = "rdif-intc"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92a8eb1b112b2bb467c4f074ee749d389cdeb84ce7756768a39637dbe2905a04"
+dependencies = [
+ "rdif-base 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "rdif-timer"
 version = "0.1.1"
 dependencies = [
- "rdif-base",
+ "rdif-base 0.1.2",
+]
+
+[[package]]
+name = "rdif-timer"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9115e47b0302a357d678f573370501729844cb0d3ad39eeaa03c79782817638e"
+dependencies = [
+ "rdif-base 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -553,9 +566,9 @@ version = "0.1.0"
 dependencies = [
  "fdt-parser",
  "log",
- "rdif-base",
- "rdif-intc",
- "rdif-timer",
+ "rdif-base 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rdif-intc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rdif-timer 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "spin",
  "thiserror",
 ]
@@ -632,7 +645,6 @@ dependencies = [
  "buddy_system_allocator",
  "byte-unit",
  "dma-api",
- "driver-interface 0.5.5",
  "fdt-parser",
  "lazy_static",
  "lock_api",

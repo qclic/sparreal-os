@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 use core::error::Error;
 
-pub use driver_interface::timer::Hardware;
+pub use rdif_timer::*;
 
 pub type OnProbeFdt = fn(node: super::FdtInfo<'_>) -> Result<Hardware, Box<dyn Error>>;

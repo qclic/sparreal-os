@@ -7,9 +7,9 @@ use core::{
 };
 
 use alloc::collections::btree_map::BTreeMap;
-use driver_interface::intc::CpuId;
 use log::debug;
 use percpu::PerCPU;
+use platform::CpuId;
 
 pub use crate::platform::PlatformInfoKind;
 use crate::{

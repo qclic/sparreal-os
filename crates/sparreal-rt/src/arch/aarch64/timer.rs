@@ -2,9 +2,11 @@ use core::error::Error;
 
 use aarch64_cpu::registers::*;
 use alloc::boxed::Box;
-use sparreal_kernel::{
-    driver::register::{FdtInfo, OnProbeKindFdt, ProbeKind},
-    driver_interface::{DriverGeneric, DriverResult, intc::IrqConfig, timer::*},
+use sparreal_kernel::driver::{
+    DriverGeneric, DriverResult,
+    intc::IrqConfig,
+    register::{FdtInfo, OnProbeKindFdt, ProbeKind},
+    timer::*,
 };
 use sparreal_macros::module_driver;
 

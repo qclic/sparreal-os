@@ -2,8 +2,9 @@ use alloc::{boxed::Box, collections::BTreeMap, vec::Vec};
 use core::{error::Error, ptr::NonNull};
 use log::debug;
 
-use driver_interface::{IrqConfig, intc::FdtParseConfigFn};
 use fdt_parser::{Fdt, Node, Phandle, Status};
+use rdif_base::IrqConfig;
+pub use rdif_intc::FdtParseConfigFn;
 
 use crate::{
     Descriptor, Device, DeviceId, DeviceKind, DriverRegister, ProbedDevice,

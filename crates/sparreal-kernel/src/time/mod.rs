@@ -5,8 +5,11 @@ use crate::{
     irq::{IrqHandleResult, IrqParam},
 };
 
-use driver_interface::{intc::IrqId, timer::*};
-use rdrive::{Device, DeviceGuard};
+use rdrive::{Device, DeviceGuard, intc::IrqId};
+pub use timer::Timer;
+
+mod queue;
+mod timer;
 
 #[derive(Default)]
 pub(crate) struct TimerData {

@@ -1,11 +1,9 @@
 use core::cell::UnsafeCell;
 
 use alloc::{boxed::Box, collections::btree_map::BTreeMap, vec::Vec};
-pub use driver_interface::IrqConfig;
-use driver_interface::intc::*;
 use log::{debug, warn};
 pub use rdrive::Phandle;
-use rdrive::{Device, DeviceId};
+use rdrive::{Device, DeviceId, IrqId, intc::*};
 use spin::Mutex;
 
 use crate::{

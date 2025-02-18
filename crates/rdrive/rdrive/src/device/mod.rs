@@ -3,8 +3,8 @@ use core::ops::{Deref, DerefMut};
 
 pub use descriptor::Descriptor;
 pub use descriptor::DeviceId;
-use driver_interface::lock::{Lock, LockGuard, LockWeak};
-pub use driver_interface::lock::{LockError, PId};
+use rdif_base::lock::{Lock, LockGuard, LockWeak};
+pub use rdif_base::lock::{LockError, PId};
 
 mod descriptor;
 pub mod intc;

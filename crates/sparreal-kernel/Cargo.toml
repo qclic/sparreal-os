@@ -8,6 +8,7 @@ log = "0.4"
 memory_addr = "0.3"
 rgb = "0.8.47"
 spin = "0.9"
+page-table-generic = "0.5"
 
 [dependencies.anyhow]
 default-features = false
@@ -18,15 +19,10 @@ default-features = false
 features = ["byte"]
 version = "5.1"
 
-[dependencies.driver-interface]
-version = "0.5"
 
 [dependencies.lazy_static]
 features = ["spin_no_std"]
 version = "1.5"
-
-[dependencies.page-table-generic]
-version = "0.5"
 
 [dependencies.pasts]
 default-features = false

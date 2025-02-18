@@ -21,5 +21,4 @@ pub mod prelude;
 pub mod task;
 pub mod time;
 
-pub use driver_interface;
 pub use mem::Address;
