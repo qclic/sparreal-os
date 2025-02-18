@@ -3,7 +3,7 @@ use core::{error::Error, ptr::NonNull};
 use log::debug;
 
 use driver_interface::{IrqConfig, intc::FdtParseConfigFn};
-use fdt_parser::{Fdt, Node, Phandle};
+use fdt_parser::{Fdt, Node, Phandle, Status};
 
 use crate::{
     Descriptor, Device, DeviceId, DeviceKind, DriverRegister, ProbedDevice,
@@ -45,8 +45,6 @@ impl ProbeData {
         &mut self,
         registers: &[(usize, DriverRegister)],
     ) -> Result<Vec<ProbedDevice>, DriverError> {
-        debug!("fdt: {:p}", self.fdt_addr);
-
         let fdt = Fdt::from_ptr(self.fdt_addr)?;
         let registers = self.get_all_fdt_registers(registers, &fdt)?;
 
@@ -61,6 +59,7 @@ impl ProbeData {
 
         for register in registers {
             let mut descriptor = register.descriptor.clone();
+            debug!("Probe {}", descriptor.name);
             let kind = match register.on_probe {
                 OnProbeKindFdt::Intc(on_probe) => {
                     let info = on_probe(register.node.clone())?;
@@ -93,7 +92,10 @@ impl ProbeData {
 
                     descriptor.irq_parent = self.phandle_2_device_id.get(&parent).cloned();
 
+                    debug!("irq parent: {:?}", descriptor.irq_parent);
+
                     let hardware = on_probe(info)?;
+
                     DeviceKind::Timer(Device::new(descriptor, hardware))
                 }
             };
@@ -113,19 +115,26 @@ impl ProbeData {
         fdt: &'a Fdt<'_>,
     ) -> Result<Vec<ProbeFdtInfo<'a>>, DriverError> {
         let mut vec = Vec::new();
-
         for node in fdt.all_nodes() {
-            debug!("node: {}", node.name);
-            for (i, register) in registers {
-                for probe in register.probe_kinds {
-                    match probe {
-                        ProbeKind::Fdt {
-                            compatibles,
-                            on_probe,
-                        } => {
-                            if let Some(node_campatibles) = node.compatible() {
-                                for campatible in node_campatibles {
-                                    if compatibles.contains(&campatible?) {
+            if matches!(node.status(), Some(Status::Disabled)) {
+                continue;
+            }
+
+            if let Some(mut _node_campatibles) = node.compatible() {
+                let mut node_campatibles = Vec::new();
+                while let Some(Ok(campatible)) = _node_campatibles.next() {
+                    node_campatibles.push(campatible);
+                }
+
+                for (i, register) in registers {
+                    for probe in register.probe_kinds {
+                        match probe {
+                            ProbeKind::Fdt {
+                                compatibles,
+                                on_probe,
+                            } => {
+                                for campatible in &node_campatibles {
+                                    if compatibles.contains(campatible) {
                                         vec.push(ProbeFdtInfo {
                                             node: node.clone(),
                                             on_probe: on_probe.clone(),

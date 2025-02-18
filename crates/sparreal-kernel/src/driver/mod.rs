@@ -1,5 +1,5 @@
 use log::debug;
-use rdrive::DriverInfoKind;
+pub use rdrive::*;
 
 use crate::{globals::global_val, irq, platform, time};
 

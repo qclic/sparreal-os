@@ -186,7 +186,7 @@ pub fn module_driver(input: TokenStream) -> TokenStream {
         #[unsafe(link_section = ".driver.register")]
         #[unsafe(no_mangle)]
         #[used(linker)]
-        pub static #static_name: sparreal_kernel::driver_interface::DriverRegister = sparreal_kernel::driver_interface::DriverRegister{
+        pub static #static_name: sparreal_kernel::driver::DriverRegister = sparreal_kernel::driver::DriverRegister{
             #input
         };
     }

@@ -7,7 +7,6 @@ custom_type!(IrqId, usize, "{:#x}");
 custom_type!(CpuId, usize, "{:#x}");
 
 pub type Hardware = Box<dyn Interface>;
-pub type OnProbeFdt = fn(node: crate::fdt::Node<'_>) -> Result<FdtProbeInfo, Box<dyn Error>>;
 pub type HardwareCPU = Box<dyn InterfaceCPU>;
 
 /// Fdt 解析 `interrupts` 函数，一次解析一个`cell`

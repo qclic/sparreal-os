@@ -2,16 +2,12 @@
 
 extern crate alloc;
 
-pub use fdt_parser as fdt;
-
 pub(crate) mod _macro;
+pub(crate) mod err;
 pub mod intc;
 pub mod io;
-mod register;
 pub mod timer;
 pub mod uart;
-pub use register::*;
-pub(crate) mod err;
 pub use err::{DriverError, DriverResult};
 pub use intc::IrqConfig;
 pub mod lock;

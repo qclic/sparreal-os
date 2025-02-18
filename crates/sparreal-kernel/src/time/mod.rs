@@ -51,7 +51,7 @@ pub(crate) fn init_current_cpu() -> Option<()> {
     t.enable();
 
     IrqParam {
-        intc: t.descriptor.device_id,
+        intc: t.descriptor.irq_parent?,
         cfg: t.irq(),
     }
     .register_builder(irq_handle)

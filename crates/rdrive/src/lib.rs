@@ -6,6 +6,7 @@ use alloc::vec::Vec;
 use core::ptr::NonNull;
 use error::DriverError;
 pub use fdt_parser::Phandle;
+use log::debug;
 
 use spin::Mutex;
 
@@ -66,6 +67,7 @@ pub fn probe_intc() -> Result<(), DriverError> {
 }
 
 pub fn probe_timer() -> Result<(), DriverError> {
+    debug!("Probe timer");
     edit(|manager| manager.probe_timer())
 }
 

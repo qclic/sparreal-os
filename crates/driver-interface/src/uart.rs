@@ -1,14 +1,9 @@
-use fdt_parser::Node;
-
 use crate::{
     DriverGeneric, IrqHandleResult,
     io::{Read, Write},
 };
 
 pub type Hardware = alloc::boxed::Box<dyn Interface>;
-/// The function to probe the hardware.
-/// The first parameter is the ptr of fdt.
-pub type OnProbeFdt = fn(node: Node<'_>) -> Hardware;
 
 pub trait Interface: DriverGeneric + Write + Read + Sync {
     fn handle_irq(&mut self, irq: usize) -> IrqHandleResult;

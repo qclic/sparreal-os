@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use log::debug;
 
 use crate::{
     DeviceKind, DriverInfoKind, DriverRegister,
@@ -101,7 +102,6 @@ impl Manager {
                     self.timer.insert(device);
                 }
             }
-
             self.registers.set_probed(probed.register_id);
         }
 

@@ -11,7 +11,7 @@ pub mod globals;
 pub mod io;
 
 pub mod async_std;
-mod driver;
+pub mod driver;
 pub mod irq;
 mod lang_items;
 mod logger;
