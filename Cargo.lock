@@ -531,7 +531,7 @@ dependencies = [
 
 [[package]]
 name = "rdif-base"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "rdif-intc"
@@ -551,9 +551,11 @@ dependencies = [
 name = "rdrive"
 version = "0.1.0"
 dependencies = [
- "driver-interface 0.5.5",
  "fdt-parser",
  "log",
+ "rdif-base",
+ "rdif-intc",
+ "rdif-timer",
  "spin",
  "thiserror",
 ]

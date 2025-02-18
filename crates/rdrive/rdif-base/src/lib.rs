@@ -6,6 +6,7 @@ extern crate alloc;
 mod _macro;
 
 pub mod io;
+pub mod lock;
 
 pub type DriverResult<T = ()> = core::result::Result<T, alloc::boxed::Box<dyn core::error::Error>>;
 
