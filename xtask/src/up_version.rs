@@ -1,4 +1,4 @@
-use std::{env::current_dir, fs, path::Path, usize};
+use std::{env::current_dir, fs, path::Path};
 
 use toml::Value;
 
@@ -105,7 +105,12 @@ fn update_dep(crate_dir: &Path, deps: &[&str], new_version: &str) {
         for dep in deps {
             if let Some(pkg) = dependencies.get_mut(dep) {
                 if let Some(old_version) = pkg.get_mut("version") {
-                    println!("old version: {:?}", old_version);
+                    println!(
+                        "{}: {}->{}",
+                        *dep,
+                        old_version.as_str().unwrap(),
+                        new_version
+                    );
                     *old_version = Value::String(new_version.to_string());
 
                     changed = true;
