@@ -4,7 +4,6 @@ members = [
     "app/*",
     "crates/bare-test",
     "crates/bare-test-macros",
-    "crates/driver-interface",
     "crates/page-table-arm",
     "crates/sparreal-kernel",
     "crates/sparreal-macros",

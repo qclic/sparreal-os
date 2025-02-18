@@ -146,7 +146,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
 name = "bare-test"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
  "bare-test-macros",
  "log",
@@ -250,14 +250,6 @@ name = "dma-api"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13029088ff130c8eb6a35ff20410ebed5f6750507681bf3d90f74ba97032a407"
-
-[[package]]
-name = "driver-interface"
-version = "0.5.6"
-dependencies = [
- "futures",
- "log",
-]
 
 [[package]]
 name = "embedded-io"
