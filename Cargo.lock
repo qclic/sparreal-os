@@ -554,7 +554,7 @@ dependencies = [
 
 [[package]]
 name = "rdrive"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fdt-parser",
  "log",

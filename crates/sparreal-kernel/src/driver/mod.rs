@@ -1,7 +1,7 @@
+use crate::{globals::global_val, irq, platform, time};
 use log::debug;
 pub use rdrive::*;
-
-use crate::{globals::global_val, irq, platform, time};
+pub use sparreal_macros::module_driver;
 
 pub fn init() {
     let info = match &global_val().platform_info {

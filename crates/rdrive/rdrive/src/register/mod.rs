@@ -2,7 +2,7 @@ use alloc::collections::BTreeSet;
 use alloc::{boxed::Box, vec::Vec};
 use core::{error::Error, ops::Deref};
 
-use crate::intc::{IrqConfig, FdtParseConfigFn};
+use crate::intc::{FdtParseConfigFn, IrqConfig};
 pub use fdt_parser::Node;
 
 pub mod intc;

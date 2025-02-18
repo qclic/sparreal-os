@@ -20,6 +20,7 @@ dma-api = "0.2"
 fdt-parser = "0.4"
 log = "0.4"
 
+
 [dependencies.futures]
 default-features = false
 features = ["alloc"]

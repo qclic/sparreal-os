@@ -4,10 +4,12 @@ use fdt_parser::Node;
 
 use arm_gic_driver::{fdt_parse_irq_config, v2::Gic};
 use sparreal_kernel::{
-    driver::register::{OnProbeKindFdt, ProbeKind, intc::FdtProbeInfo},
+    driver::{
+        module_driver,
+        register::{intc::FdtProbeInfo, *},
+    },
     mem::iomap,
 };
-use sparreal_macros::module_driver;
 
 module_driver!(
     name: "GICv2",

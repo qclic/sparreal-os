@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::ffi::CStr;
 use core::ops::Range;
 use core::ptr::NonNull;
-use rdrive::DriverRegister;
+use rdrive::register::DriverRegister;
 pub use rdrive::intc::CpuId;
 
 use crate::globals::global_val;

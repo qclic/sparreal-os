@@ -3,12 +3,8 @@ use core::error::Error;
 use aarch64_cpu::registers::*;
 use alloc::boxed::Box;
 use sparreal_kernel::driver::{
-    DriverGeneric, DriverResult,
-    intc::IrqConfig,
-    register::{FdtInfo, OnProbeKindFdt, ProbeKind},
-    timer::*,
+    DriverGeneric, DriverResult, intc::IrqConfig, module_driver, register::*, timer::*,
 };
-use sparreal_macros::module_driver;
 
 module_driver!(
     name: "ARMv8 Timer",
