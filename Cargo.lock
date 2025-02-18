@@ -531,11 +531,11 @@ dependencies = [
 
 [[package]]
 name = "rdif-base"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "rdif-intc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rdif-base",
 ]

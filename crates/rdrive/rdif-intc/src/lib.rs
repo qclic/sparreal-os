@@ -6,7 +6,7 @@ use alloc::boxed::Box;
 use core::error::Error;
 
 use rdif_base::custom_type;
-pub use rdif_base::{DriverGeneric, IrqConfig, IrqId, Trigger};
+pub use rdif_base::{DriverGeneric, DriverResult, IrqConfig, IrqId, Trigger};
 
 custom_type!(CpuId, usize, "{:#x}");
 
