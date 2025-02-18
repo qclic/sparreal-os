@@ -9,11 +9,13 @@ members = [
     "crates/sparreal-kernel",
     "crates/sparreal-macros",
     "crates/sparreal-rt",
-    "crates/rdrive/*", "crates/xtask",
+    "crates/rdrive/*",
 ]
+exclude = ["xtask"]
+
 
 [workspace.package]
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 
 [workspace.dependencies]
