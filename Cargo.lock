@@ -566,6 +566,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rdrive-macro-utils"
+version = "0.1.0"
+dependencies = [
+ "abi-singleton",
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "rdrive-macros"
+version = "0.1.0"
+dependencies = [
+ "rdrive-macro-utils",
+]
+
+[[package]]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -659,6 +677,7 @@ dependencies = [
  "darling",
  "proc-macro2",
  "quote",
+ "rdrive-macro-utils",
  "syn",
 ]
 

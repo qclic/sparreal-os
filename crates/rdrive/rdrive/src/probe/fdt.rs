@@ -121,32 +121,27 @@ impl ProbeData {
                 continue;
             }
 
-            if let Some(mut _node_campatibles) = node.compatible() {
-                let mut node_campatibles = Vec::new();
-                while let Some(Ok(campatible)) = _node_campatibles.next() {
-                    node_campatibles.push(campatible);
-                }
+            let node_compatibles = node.compatibles().collect::<Vec<_>>();
 
-                for (i, register) in registers {
-                    for probe in register.probe_kinds {
-                        match probe {
-                            ProbeKind::Fdt {
-                                compatibles,
-                                on_probe,
-                            } => {
-                                for campatible in &node_campatibles {
-                                    if compatibles.contains(campatible) {
-                                        vec.push(ProbeFdtInfo {
-                                            node: node.clone(),
-                                            on_probe: on_probe.clone(),
-                                            descriptor: Descriptor {
-                                                name: register.name,
-                                                device_id: DeviceId::new(),
-                                                ..Default::default()
-                                            },
-                                            register_index: *i,
-                                        });
-                                    }
+            for (i, register) in registers {
+                for probe in register.probe_kinds {
+                    match probe {
+                        ProbeKind::Fdt {
+                            compatibles,
+                            on_probe,
+                        } => {
+                            for campatible in &node_compatibles {
+                                if compatibles.contains(campatible) {
+                                    vec.push(ProbeFdtInfo {
+                                        node: node.clone(),
+                                        on_probe: on_probe.clone(),
+                                        descriptor: Descriptor {
+                                            name: register.name,
+                                            device_id: DeviceId::new(),
+                                            ..Default::default()
+                                        },
+                                        register_index: *i,
+                                    });
                                 }
                             }
                         }
