@@ -8,7 +8,6 @@ members = [
     "crates/sparreal-kernel",
     "crates/sparreal-macros",
     "crates/sparreal-rt",
-    "crates/rdrive/*",
 ]
 exclude = ["xtask"]
 
@@ -22,7 +21,6 @@ sparreal-rt = { path = "crates/sparreal-rt", default-features = false }
 sparreal-macros = { path = "crates/sparreal-macros" }
 sparreal-kernel = { path = "crates/sparreal-kernel" }
 page-table-arm = { path = "crates/page-table-arm" }
-driver-interface = { path = "crates/driver-interface" }
 bare-test = { path = "crates/bare-test" }
 bare-test-macros = { path = "crates/bare-test-macros" }
 log = "0.4"

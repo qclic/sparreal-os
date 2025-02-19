@@ -106,7 +106,7 @@ dependencies = [
  "bitflags",
  "enum_dispatch",
  "log",
- "rdif-intc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rdif-intc",
  "tock-registers",
 ]
 
@@ -513,19 +513,8 @@ dependencies = [
 [[package]]
 name = "rdif-base"
 version = "0.1.2"
-
-[[package]]
-name = "rdif-base"
-version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce9090d968a27bbfc80749ee351c476577230b10211decb813111300d8dfd9b4"
-
-[[package]]
-name = "rdif-intc"
-version = "0.1.1"
-dependencies = [
- "rdif-base 0.1.2",
-]
 
 [[package]]
 name = "rdif-intc"
@@ -533,14 +522,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92a8eb1b112b2bb467c4f074ee749d389cdeb84ce7756768a39637dbe2905a04"
 dependencies = [
- "rdif-base 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rdif-timer"
-version = "0.1.1"
-dependencies = [
- "rdif-base 0.1.2",
+ "rdif-base",
 ]
 
 [[package]]
@@ -549,36 +531,33 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9115e47b0302a357d678f573370501729844cb0d3ad39eeaa03c79782817638e"
 dependencies = [
- "rdif-base 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rdif-base",
 ]
 
 [[package]]
 name = "rdrive"
-version = "0.1.2"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "378cf235f705cb8881e63c7eda29a7f4931b94ae2bc153b1f0914d4ff913f3eb"
 dependencies = [
  "fdt-parser",
  "log",
- "rdif-base 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rdif-intc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "rdif-timer 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rdif-base",
+ "rdif-intc",
+ "rdif-timer",
  "spin",
  "thiserror",
 ]
 
 [[package]]
 name = "rdrive-macro-utils"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56608f659dc99a1bdcf648c0f84c2bfe2bce40e0a3d8ab704291db5f822705fc"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "rdrive-macros"
-version = "0.1.0"
-dependencies = [
- "rdrive-macro-utils",
 ]
 
 [[package]]
