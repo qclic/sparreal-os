@@ -569,8 +569,6 @@ dependencies = [
 name = "rdrive-macro-utils"
 version = "0.1.0"
 dependencies = [
- "abi-singleton",
- "darling",
  "proc-macro2",
  "quote",
  "syn",
