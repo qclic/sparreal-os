@@ -1,5 +1,5 @@
 use core::{
-    arch::{asm, global_asm},
+    arch::{asm, global_asm, naked_asm},
     ptr::NonNull,
 };
 
@@ -8,6 +8,61 @@ use aarch64_cpu::registers::*;
 use sparreal_kernel::{io::print::*, platform::PlatformInfoKind};
 
 global_asm!(include_str!("boot.s"));
+
+const FLAG_LE: usize = 0b0;
+const FLAG_PAGE_SIZE_4K: usize = 0b10;
+const FLAG_ANY_MEM: usize = 0b1000;
+
+#[naked]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.head")]
+/// The entry point of the kernel.
+pub unsafe extern "C" fn _start() -> ! {
+    unsafe {
+        naked_asm!(
+            // code0/code1
+            "nop",
+            "bl {entry}",
+            // text_offset
+            ".quad 0",
+            // image_size
+            ".quad _kernel_size",
+            // flags
+            ".quad {flags}",
+            // Reserved fields
+            ".quad 0",
+            ".quad 0",
+            ".quad 0",
+            // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
+            ".ascii \"ARM\\x64\"",
+            // Another reserved field at the end of the header
+            ".byte 0, 0, 0, 0",
+            flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
+            entry = sym primary_entry,
+        )
+    }
+}
+
+#[naked]
+#[unsafe(link_section = ".text.boot")]
+/// The entry point of the kernel.
+unsafe extern "C" fn primary_entry() -> ! {
+    unsafe {
+        naked_asm!(
+            "ADR      x11, .",
+            "LDR      x10, ={this_func}",
+            "SUB      x18, x10, x11", // x18 = va_offset
+            "MOV      x19, x0",        // x19 = dtb_addr
+
+            "LDR      x1, =_stack_top",
+            "SUB      x1, x1, x18", // X1 == STACK_TOP
+            "MOV      sp, x1",
+            "BL       {switch_to_el1}",
+            this_func = sym primary_entry,
+            switch_to_el1 = sym switch_to_el1,
+        )
+    }
+}
 
 #[unsafe(no_mangle)]
 extern "C" fn __rust_boot(va_offset: usize, fdt_addr: usize) {
@@ -32,8 +87,7 @@ extern "C" fn __rust_boot(va_offset: usize, fdt_addr: usize) {
     }
 }
 
-#[unsafe(no_mangle)]
-unsafe extern "C" fn __switch_to_el1() {
+fn switch_to_el1() {
     SPSel.write(SPSel::SP::ELx);
     SP_EL0.set(0);
     let current_el = CurrentEL.read(CurrentEL::EL);
@@ -53,11 +107,10 @@ unsafe extern "C" fn __switch_to_el1() {
             );
             unsafe {
                 asm!(
-                    "
-            adr      x2, _start_boot
-            msr elr_el3, x2
-            "
-                );
+                "adr      x2, {}",
+                "msr elr_el3, x2",
+                 sym primary_entry
+                    );
             }
         }
         // Disable EL1 timer traps and the timer offset.

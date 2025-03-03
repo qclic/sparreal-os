@@ -8,8 +8,8 @@ members = [
     "crates/sparreal-kernel",
     "crates/sparreal-macros",
     "crates/sparreal-rt",
+    "xtask"
 ]
-exclude = ["xtask"]
 
 
 [workspace.package]

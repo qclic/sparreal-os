@@ -10,7 +10,9 @@ pub use paging::iomap;
 
 use crate::{
     globals::global_val,
-    io::print::{early_dbg, early_dbg_hex, early_dbg_hexln, early_dbg_range, early_dbgln},
+    io::print::{
+        early_dbg, early_dbg_fmt, early_dbg_hex, early_dbg_hexln, early_dbg_range, early_dbgln,
+    },
     platform_if::MMUImpl,
 };
 
@@ -51,6 +53,9 @@ pub fn new_boot_table(rsv: &[BootMemoryRegion]) -> Result<usize, &'static str> {
     let end = memory.end;
 
     early_dbg_range("page table allocator", start.as_usize()..end.as_usize());
+
+    early_dbg_fmt(format_args!("test {}\n", "abc"));
+
     unsafe { access.0.add_to_heap(start.as_usize(), end.as_usize()) };
 
     let mut table =
