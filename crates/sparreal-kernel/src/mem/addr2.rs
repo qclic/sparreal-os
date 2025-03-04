@@ -1,4 +1,4 @@
-use core::fmt::Debug;
+use core::{fmt::Debug, ops::Range};
 
 macro_rules! def_addr {
     ($name:ident, $t:ty) => {
@@ -57,9 +57,19 @@ macro_rules! def_addr {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct CRange<T: Debug + Sized + Clone + Copy> {
-    start: T,
-    end: T,
+    pub start: T,
+    pub end: T,
 }
+
+impl<T: Debug + Sized + Clone + Copy> From<Range<T>> for CRange<T> {
+    fn from(value: Range<T>) -> Self {
+        Self {
+            start: value.start,
+            end: value.end,
+        }
+    }
+}
+
 impl<T: Debug + Sized + Clone + Copy> Debug for CRange<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "[{:?}, {:?})", self.start, self.end)

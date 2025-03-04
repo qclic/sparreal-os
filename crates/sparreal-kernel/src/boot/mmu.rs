@@ -9,20 +9,10 @@ use crate::{
     platform_if::MMUImpl,
 };
 
-pub fn start(
-    text_va_offset: usize,
-    platform_info: PlatformInfoKind,
-    rsv_memory: &[BootMemoryRegion],
-) -> Result<(), &'static str> {
+pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(), &'static str> {
     early_dbgln("Booting up");
-
-    crate::mem::set_va_offset(text_va_offset);
     mem::set_text_va_offset(text_va_offset);
-    unsafe { crate::globals::setup(platform_info)? };
-
-    print_info();
-
-    let table = new_boot_table(rsv_memory)?;
+    let table = new_boot_table()?;
 
     fence(Ordering::SeqCst);
 

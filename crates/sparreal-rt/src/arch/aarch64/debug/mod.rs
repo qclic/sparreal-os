@@ -36,7 +36,7 @@ pub unsafe fn mmu_add_offset(va_offset: usize) {
     REG_BASE.fetch_add(va_offset, Ordering::SeqCst);
 }
 
-fn reg() -> usize {
+pub fn reg() -> usize {
     REG_BASE.load(Ordering::Relaxed)
 }
 

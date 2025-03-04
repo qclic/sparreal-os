@@ -6,8 +6,10 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
+use addr2::PhysRange;
 use buddy_system_allocator::Heap;
 use log::debug;
+use page_table_generic::{AccessSetting, CacheSetting};
 use spin::Mutex;
 
 use crate::{globals::global_val, platform::kstack_size, println};
@@ -66,6 +68,11 @@ unsafe impl GlobalAlloc for KAllocator {
 }
 
 static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
+
+#[cfg(feature = "mmu")]
+pub const IO_OFFSET: usize = 0xfffe_0000_0000_0000;
+#[cfg(not(feature = "mmu"))]
+pub const IO_OFFSET: usize = 0;
 
 static mut VA_OFFSET: usize = 0;
 static mut VA_OFFSET_NOW: usize = 0;
@@ -167,3 +174,5 @@ pub fn iomap(paddr: PhysAddr, _size: usize) -> NonNull<u8> {
         NonNull::new_unchecked(paddr.as_usize() as *mut u8)
     }
 }
+
+

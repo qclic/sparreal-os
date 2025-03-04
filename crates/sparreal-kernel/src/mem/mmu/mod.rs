@@ -1,8 +1,8 @@
-use core::{alloc::Layout, ops::Range, ptr::NonNull};
+use core::{alloc::Layout, ffi::CStr, ops::Range, ptr::NonNull};
 
 use buddy_system_allocator::Heap;
 use page_table_generic::err::PagingError;
-pub use page_table_generic::{AccessSetting, CacheSetting, MapConfig};
+pub use page_table_generic::*;
 
 mod paging;
 
@@ -19,7 +19,10 @@ use crate::{
 use paging::PageTableRef;
 pub use paging::init_table;
 
+pub use super::addr2::PhysRange;
 use super::{Align, va_offset};
+
+pub use arrayvec::ArrayVec;
 
 struct PageHeap(Heap<32>);
 
@@ -37,13 +40,55 @@ impl page_table_generic::Access for PageHeap {
     }
 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct RsvRegion {
+    pub range: PhysRange,
+    pub name: *const u8,
+    pub access: AccessSetting,
+    pub cache: CacheSetting,
+    pub kind: RsvRegionKind,
+}
+
+impl RsvRegion {
+    pub fn new(
+        range: PhysRange,
+        name: &'static CStr,
+        access: AccessSetting,
+        cache: CacheSetting,
+        kind: RsvRegionKind,
+    ) -> Self {
+        Self {
+            range,
+            name: name.as_ptr(),
+            access,
+            cache,
+            kind,
+        }
+    }
+
+    pub fn name(&self) -> &'static str {
+        unsafe { CStr::from_ptr(self.name).to_str().unwrap() }
+    }
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum RsvRegionKind {
+    Image,
+    Stack,
+    Other,
+}
+
 pub struct BootMemoryRegion {
     pub name: &'static str,
     pub range: Range<usize>,
     pub access: AccessSetting,
     pub cache: CacheSetting,
 }
-pub fn new_boot_table(rsv: &[BootMemoryRegion]) -> Result<usize, &'static str> {
+pub fn new_boot_table() -> Result<usize, &'static str> {
+    
+
     let debugcon = global_val().platform_info.debugcon();
 
     let mut access = PageHeap(Heap::empty());

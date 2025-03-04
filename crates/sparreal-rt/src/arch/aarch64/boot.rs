@@ -83,7 +83,7 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
         todo!()
     };
 
-    if let Err(s) = sparreal_kernel::boot::start(text_va, platform_info, &[]) {
+    if let Err(s) = sparreal_kernel::boot::start(text_va, platform_info) {
         early_dbgln(s);
     }
 

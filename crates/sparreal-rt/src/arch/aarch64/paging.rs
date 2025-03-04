@@ -3,16 +3,30 @@ use core::arch::asm;
 use aarch64_cpu::{asm::barrier::*, registers::*};
 use page_table_arm::*;
 use sparreal_kernel::{
-    io::print::{early_dbg, early_dbg_hexln},
-    mem::va_offset,
+    io::print::*,
+    mem::{IO_OFFSET, addr2::PhysAddr},
     platform_if::*,
 };
-use sparreal_macros::api_impl;
 
 pub struct PageTableImpl;
 
 #[api_impl]
 impl MMU for PageTableImpl {
+    fn rsv_regions() -> ArrayVec<RsvRegion, 8> {
+        let mut ret = crate::mem::rsv_regions();
+        let debug_reg = PhysAddr::new(super::debug::reg());
+
+        ret.push(RsvRegion::new(
+            (debug_reg..debug_reg + 0x1000).into(),
+            c"debug_uart",
+            AccessSetting::Read | AccessSetting::Write,
+            CacheSetting::Device,
+            RsvRegionKind::Other,
+        ));
+
+        ret
+    }
+
     unsafe fn flush_tlb(addr: *const u8) {
         unsafe { asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) addr as usize) };
     }
@@ -184,7 +198,7 @@ impl MMU for PageTableImpl {
         early_dbg("TCR_EL1: ");
         early_dbg_hexln(TCR_EL1.get());
         unsafe {
-            super::debug::mmu_add_offset(va_offset());
+            super::debug::mmu_add_offset(IO_OFFSET);
 
             asm!("tlbi vmalle1");
             isb(SY);

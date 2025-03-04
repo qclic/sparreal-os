@@ -1,12 +1,9 @@
-use core::ffi::CStr;
-
-pub use arrayvec::ArrayVec;
 pub use page_table_generic::{AccessSetting, CacheSetting};
 pub use rdrive::register::DriverRegisterSlice;
 pub use sparreal_macros::api_impl;
 use sparreal_macros::api_trait;
 
-use crate::mem::{KernelRegions, addr2::PhysRange};
+pub use crate::mem::KernelRegions;
 
 #[api_trait]
 pub trait Platform {
@@ -61,11 +58,12 @@ pub trait Platform {
 }
 
 #[cfg(feature = "mmu")]
-pub use page_table_generic::*;
+pub use crate::mem::mmu::*;
 
 #[cfg(feature = "mmu")]
 #[api_trait]
 pub trait MMU {
+    fn rsv_regions() -> ArrayVec<RsvRegion, 8>;
     fn set_kernel_table(addr: usize);
     fn get_kernel_table() -> usize;
     fn set_user_table(addr: usize);
