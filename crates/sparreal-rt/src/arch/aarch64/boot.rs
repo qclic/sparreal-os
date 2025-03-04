@@ -1,13 +1,14 @@
-use core::arch::{asm, naked_asm};
+use core::{
+    arch::{asm, naked_asm},
+    hint::spin_loop,
+    ptr::NonNull,
+};
 
 use aarch64_cpu::{asm::barrier, registers::*};
+use sparreal_kernel::{globals::PlatformInfoKind, io::print::early_dbgln, platform::shutdown};
 
-use crate::{
-    arch::{cache, mmu},
-    debug::{self, dbg, dbg_hexln, dbgln},
-    mem::{self},
-    vm_main,
-};
+use super::{debug, paging};
+use crate::mem::{self, clean_bss};
 
 const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -59,30 +60,34 @@ unsafe extern "C" fn primary_entry() -> ! {
             "SUB      x1,  x1, x18", // X1 == STACK_TOP
             "MOV      sp,  x1",
 
-            "BL       {clean_bss}",
-            "MOV      x0,  x18",
-            "BL       {set_va}",
             "BL       {switch_to_elx}",
-            "BL       {enable_fp}",
-            "MOV      x0,  x19",
-            "BL       {init_debug}",
-            "BL       {mmu_init}",
-            set_va = sym set_va,
+
+            "MOV      x0,  x18",
+            "MOV      x1,  x19",
+            "BL       {entry}",
             this_func = sym primary_entry,
             switch_to_elx = sym switch_to_elx,
-            clean_bss = sym mem::clean_bss,
-            mmu_init = sym mmu::init,
-            enable_fp = sym enable_fp,
-            init_debug = sym init_debug,
+            entry = sym rust_entry,
         )
     }
 }
 
-fn set_va(va: usize) {
-    unsafe {
-        mem::set_va(va);
-        sparreal_kernel::mem::set_text_va_offset(va);
+fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
+    clean_bss();
+    enable_fp();
+    debug::init_by_fdt(fdt);
+
+    let platform_info: PlatformInfoKind = if let Some(addr) = NonNull::new(fdt) {
+        PlatformInfoKind::new_fdt(addr)
+    } else {
+        todo!()
+    };
+
+    if let Err(s) = sparreal_kernel::boot::start(text_va, platform_info, &[]) {
+        early_dbgln(s);
     }
+
+    shutdown()
 }
 
 fn switch_to_elx() {
@@ -185,20 +190,7 @@ fn enable_fp() {
     barrier::isb(barrier::SY);
 }
 pub fn rust_main() -> ! {
-    dbgln("mmu enabled");
-
-    vm_main()
-}
-
-fn init_debug(fdt: *mut u8) -> Option<()> {
-    let fdt = unsafe { mem::save_fdt(fdt) }?;
-    debug::init_by_fdt(fdt);
-    dbg("VA_OFFSET: ");
-    dbg_hexln(mem::va_offset() as _);
-
-    if CurrentEL.read(CurrentEL::EL) != 2 {
-        debug::dbgln("Not in EL2!");
-        panic!("");
+    loop {
+        spin_loop();
     }
-    Some(())
 }

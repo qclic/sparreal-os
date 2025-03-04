@@ -20,7 +20,7 @@ memory_addr = "0.3"
 numeric-enum-macro = "0.2"
 arrayvec = { version = "0.7", default-features = false }
 sparreal-macros = { workspace = true }
-sparreal-kernel = { workspace = true }
+sparreal-kernel = { workspace = true, features = ["mmu"] }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"

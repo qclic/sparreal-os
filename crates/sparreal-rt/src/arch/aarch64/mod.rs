@@ -1,32 +1,14 @@
-mod boot;
-mod cache;
-mod cpu;
-pub mod mmu;
-mod trap;
-
-use core::{arch::asm, hint::spin_loop};
+use core::arch::asm;
 
 use aarch64_cpu::registers::*;
-use log::error;
-use sparreal_kernel::{driver::DriverRegisterSlice, mem::KernelRegions, platform_if::{CacheOp, Platform}};
-use sparreal_macros::api_impl;
-pub use trap::install_trap_vector;
+use sparreal_kernel::{mem::KernelRegions, platform_if::*};
 
-use crate::percpu::CPUHardId;
-
-pub fn shutdown() -> ! {
-    error!("shutdown unimplemented");
-    loop {
-        spin_loop();
-    }
-}
+mod boot;
+mod debug;
+mod paging;
 
 pub fn is_mmu_enabled() -> bool {
     SCTLR_EL2.matches_any(&[SCTLR_EL2::M::Enable])
-}
-
-pub fn cpu_id() -> CPUHardId {
-    (MPIDR_EL1.get() as usize & 0xff00ffffff).into()
 }
 
 struct PlatformImpl;
@@ -105,7 +87,7 @@ impl Platform for PlatformImpl {
     }
 
     fn debug_put(b: u8) {
-        crate::debug::put(b);
+        debug::put(b);
     }
 
     fn irq_all_enable() {

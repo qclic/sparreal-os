@@ -7,5 +7,5 @@ edition.workspace = true
 sparreal-rt = { workspace = true, features = [
     "early-print",
 ]}
-# sparreal-kernel = { workspace = true }
+sparreal-kernel = { workspace = true }
 log = { workspace = true }

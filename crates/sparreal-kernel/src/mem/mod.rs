@@ -2,7 +2,7 @@
 
 use core::{
     alloc::GlobalAlloc,
-    ptr::{null_mut, slice_from_raw_parts_mut, NonNull},
+    ptr::{NonNull, null_mut, slice_from_raw_parts_mut},
     sync::atomic::{AtomicUsize, Ordering},
 };
 
@@ -13,6 +13,7 @@ use spin::Mutex;
 use crate::{globals::global_val, platform::kstack_size, println};
 
 mod addr;
+pub mod addr2;
 mod cache;
 #[cfg(feature = "mmu")]
 pub mod mmu;

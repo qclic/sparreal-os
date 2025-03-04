@@ -4,19 +4,20 @@ use super::{__start, print_info};
 use crate::{
     globals::global_val,
     io::print::*,
-    mem::{mmu::*, set_va_offset_now},
+    mem::{self, mmu::*, set_va_offset_now},
     platform::PlatformInfoKind,
     platform_if::MMUImpl,
 };
 
 pub fn start(
-    va_offset: usize,
+    text_va_offset: usize,
     platform_info: PlatformInfoKind,
     rsv_memory: &[BootMemoryRegion],
 ) -> Result<(), &'static str> {
     early_dbgln("Booting up");
 
-    crate::mem::set_va_offset(va_offset);
+    crate::mem::set_va_offset(text_va_offset);
+    mem::set_text_va_offset(text_va_offset);
     unsafe { crate::globals::setup(platform_info)? };
 
     print_info();
@@ -32,9 +33,9 @@ pub fn start(
 
     fence(Ordering::SeqCst);
 
-    let jump_to = __start as usize + va_offset;
-    let stack_top = global_val().kstack_top.as_usize() + va_offset;
-    unsafe { set_va_offset_now(va_offset) };
+    let jump_to = __start as usize + text_va_offset;
+    let stack_top = global_val().kstack_top.as_usize() + text_va_offset;
+    unsafe { set_va_offset_now(text_va_offset) };
 
     early_dbg("Jump to __start: ");
     early_dbg_hex(jump_to as _);
