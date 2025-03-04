@@ -46,8 +46,8 @@ struct Config {
 
 // 8MiB stack size per hart
 const DEFAULT_KERNEL_STACK_SIZE: usize = 8 * 1024 * 1024;
-const KERNEL_VADDR: u64 = 0xffff_ff00_0008_0000;
-// const KERNEL_VADDR: u64 = 0x40080000;
+// const KERNEL_VADDR: u64 = 0xffff_ff00_0008_0000;
+const KERNEL_VADDR: u64 = 0x40200000;
 // const KERNEL_VADDR: u64 = 0x1000000;
 
 impl Config {

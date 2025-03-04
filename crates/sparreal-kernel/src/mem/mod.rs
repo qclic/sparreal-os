@@ -2,7 +2,8 @@
 
 use core::{
     alloc::GlobalAlloc,
-    ptr::{NonNull, null_mut, slice_from_raw_parts_mut},
+    ptr::{null_mut, slice_from_raw_parts_mut, NonNull},
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 use buddy_system_allocator::Heap;
@@ -63,8 +64,14 @@ unsafe impl GlobalAlloc for KAllocator {
     }
 }
 
+static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
+
 static mut VA_OFFSET: usize = 0;
 static mut VA_OFFSET_NOW: usize = 0;
+
+pub fn set_text_va_offset(offset: usize) {
+    TEXT_OFFSET.store(offset, Ordering::SeqCst);
+}
 
 pub(crate) fn set_va_offset(offset: usize) {
     unsafe { VA_OFFSET = offset };

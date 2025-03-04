@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "app/*",
     "crates/bare-test",
@@ -14,7 +14,7 @@ members = [
 
 [workspace.package]
 version = "0.8.1"
-edition = "2024"
+edition = "2021"
 
 [workspace.dependencies]
 sparreal-rt = { path = "crates/sparreal-rt", default-features = false }

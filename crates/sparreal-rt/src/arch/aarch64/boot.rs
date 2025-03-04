@@ -5,7 +5,7 @@ use core::{
 
 use crate::mem::clear_bss;
 use aarch64_cpu::registers::*;
-use sparreal_kernel::{io::print::*, platform::PlatformInfoKind};
+use sparreal_kernel::{io::print::*, mem::set_text_va_offset, platform::PlatformInfoKind};
 
 global_asm!(include_str!("boot.s"));
 
@@ -57,8 +57,13 @@ unsafe extern "C" fn primary_entry() -> ! {
             "LDR      x1, =_stack_top",
             "SUB      x1, x1, x18", // X1 == STACK_TOP
             "MOV      sp, x1",
+            "BL       {clean_bss}",
+            "MOV      x0,  x18",
+            "BL       {set_va}",
             "BL       {switch_to_el1}",
             this_func = sym primary_entry,
+            clean_bss = sym clear_bss,
+            set_va = sym set_text_va_offset,
             switch_to_el1 = sym switch_to_el1,
         )
     }
@@ -66,24 +71,20 @@ unsafe extern "C" fn primary_entry() -> ! {
 
 #[unsafe(no_mangle)]
 extern "C" fn __rust_boot(va_offset: usize, fdt_addr: usize) {
-    unsafe {
-        clear_bss();
+    let platform_info: PlatformInfoKind = if let Some(addr) = NonNull::new(fdt_addr as _) {
+        PlatformInfoKind::new_fdt(addr)
+    } else {
+        todo!()
+    };
 
-        let platform_info: PlatformInfoKind = if let Some(addr) = NonNull::new(fdt_addr as _) {
-            PlatformInfoKind::new_fdt(addr)
-        } else {
-            todo!()
-        };
+    if let Some(info) = platform_info.debugcon() {
+        crate::debug::init_by_info(info);
+    }
 
-        if let Some(info) = platform_info.debugcon() {
-            crate::debug::init_by_info(info);
-        }
+    let rsv = [];
 
-        let rsv = [];
-
-        if let Err(s) = sparreal_kernel::boot::start(va_offset, platform_info, &rsv) {
-            early_dbgln(s);
-        }
+    if let Err(s) = sparreal_kernel::boot::start(va_offset, platform_info, &rsv) {
+        early_dbgln(s);
     }
 }
 

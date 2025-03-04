@@ -26,14 +26,8 @@ SECTIONS
         *(.srodata .srodata.*)
         *(.sdata2 .sdata2.*)
         . = ALIGN(4K);
-        _erodata = .;
-    } 
 
-    .driver.register : ALIGN(4K) {
-        _sdriver = .;
-        *(.driver.register .driver.register.*)
-        _edriver = .;
-        . = ALIGN(4K);
+        _erodata = .;
     }
    
     .data : ALIGN(4K) {
@@ -42,7 +36,11 @@ SECTIONS
         . = ALIGN(4K);
         *(.data .data.*)
         *(.sdata .sdata.*)
-        *(.got .got.*)
+        *(.got .got.*)    
+        _sdriver = .;
+        *(.driver.register .driver.register.*)
+        _edriver = .;
+        . = ALIGN(4K);
     } 
 
     .tdata : ALIGN(0x10) {
