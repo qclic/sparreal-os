@@ -1,9 +1,32 @@
 use arrayvec::ArrayVec;
-use core::ptr::{slice_from_raw_parts, slice_from_raw_parts_mut};
-use sparreal_kernel::mem::addr2::*;
+use core::ops::Range;
+use core::ptr::{NonNull, slice_from_raw_parts, slice_from_raw_parts_mut};
+use core::sync::atomic::{AtomicUsize, Ordering};
+use memory_addr::MemoryAddr;
+use sparreal_kernel::mem::addr2::PhysAddr;
 use sparreal_kernel::mem::mmu::*;
 pub use sparreal_kernel::mem::*;
 use sparreal_kernel::platform_if::RsvRegion;
+
+static FDT_ADDR: AtomicUsize = AtomicUsize::new(0);
+static FDT_LEN: AtomicUsize = AtomicUsize::new(0);
+
+pub(crate) unsafe fn save_fdt(ptr: *mut u8) -> Option<NonNull<u8>> {
+    let fdt_addr = _stack_top as usize;
+    let fdt = fdt_parser::Fdt::from_ptr(NonNull::new(ptr)?).ok()?;
+    let len = fdt.total_size();
+
+    unsafe {
+        let dst = &mut *slice_from_raw_parts_mut(fdt_addr as _, len);
+        let src = &*slice_from_raw_parts(ptr, len);
+        dst.copy_from_slice(src);
+
+        FDT_ADDR.store(fdt_addr, Ordering::SeqCst);
+        FDT_LEN.store(len, Ordering::SeqCst);
+    }
+
+    NonNull::new(FDT_ADDR.load(Ordering::SeqCst) as _)
+}
 
 unsafe extern "C" {
     fn _stext();
@@ -54,6 +77,16 @@ fn slice_to_phys_range(data: &[u8]) -> PhysRange {
     }
 }
 
+fn fdt_addr_range() -> Option<Range<PhysAddr>> {
+    let len = FDT_LEN.load(Ordering::Relaxed);
+    if len != 0 {
+        let fdt_addr = FDT_ADDR.load(Ordering::Relaxed);
+        Some(fdt_addr.into()..(fdt_addr + len.align_up_4k()).into())
+    } else {
+        None
+    }
+}
+
 pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
     let mut rsv_regions = ArrayVec::<RsvRegion, N>::new();
     rsv_regions.push(RsvRegion::new(
@@ -95,6 +128,16 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         CacheSetting::Normal,
         RsvRegionKind::Stack,
     ));
+
+    if let Some(fdt) = fdt_addr_range() {
+        rsv_regions.push(RsvRegion::new(
+            fdt.into(),
+            c"fdt",
+            AccessSetting::Read,
+            CacheSetting::Normal,
+            RsvRegionKind::Other,
+        ));
+    }
 
     rsv_regions
 }

@@ -13,7 +13,7 @@ use crate::{
     io::print::{
         early_dbg, early_dbg_fmt, early_dbg_hex, early_dbg_hexln, early_dbg_range, early_dbgln,
     },
-    platform_if::MMUImpl,
+    platform_if::{MMUImpl, PlatformImpl},
 };
 
 use paging::PageTableRef;
@@ -87,60 +87,27 @@ pub struct BootMemoryRegion {
     pub cache: CacheSetting,
 }
 pub fn new_boot_table() -> Result<usize, &'static str> {
-    
-
-    let debugcon = global_val().platform_info.debugcon();
 
     let mut access = PageHeap(Heap::empty());
-    let memory = &global_val().main_memory;
-    let size = (memory.end - memory.start) / 2;
-    let start = memory.start + size;
-    let end = memory.end;
 
-    early_dbg_range("page table allocator", start.as_usize()..end.as_usize());
+    let stack_region = MMUImpl::rsv_regions()
+        .into_iter()
+        .find(|&a| matches!(a.kind, RsvRegionKind::Stack))
+        .unwrap();
 
-    early_dbg_fmt(format_args!("test {}\n", "abc"));
+    // 临时用栈底储存页表项
+    let tmp_pt = stack_region.range.start.raw();
 
-    unsafe { access.0.add_to_heap(start.as_usize(), end.as_usize()) };
+    unsafe { access.0.init(tmp_pt, 1024 * 1024) };
 
     let mut table =
         PageTableRef::create_empty(&mut access).map_err(|_| "page table allocator no memory")?;
 
-    let va_offset = va_offset();
-
-    for memory in global_val().platform_info.memorys() {
-        map_region(
-            &mut table,
-            va_offset,
-            &BootMemoryRegion {
-                name: "memory",
-                range: memory.start.as_usize()..memory.end.as_usize(),
-                access: AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
-                cache: CacheSetting::Normal,
-            },
-            &mut access,
-        );
+    for region in MMUImpl::rsv_regions() {
+        early_dbgln(region.name());
     }
 
-    if let Some(con) = debugcon {
-        let start = con.addr.align_down(0x1000).as_usize();
 
-        map_region(
-            &mut table,
-            va_offset,
-            &BootMemoryRegion {
-                name: "debugcon",
-                range: start..start + 0x1000,
-                access: AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
-                cache: CacheSetting::Device,
-            },
-            &mut access,
-        );
-    }
-
-    for region in rsv {
-        map_region(&mut table, va_offset, region, &mut access);
-    }
 
     let table_addr = table.paddr();
 

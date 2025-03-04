@@ -76,17 +76,19 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
     clean_bss();
     enable_fp();
     debug::init_by_fdt(fdt);
+    unsafe {
+        let fdt = mem::save_fdt(fdt);
 
-    let platform_info: PlatformInfoKind = if let Some(addr) = NonNull::new(fdt) {
-        PlatformInfoKind::new_fdt(addr)
-    } else {
-        todo!()
-    };
+        let platform_info: PlatformInfoKind = if let Some(addr) = fdt {
+            PlatformInfoKind::new_fdt(addr)
+        } else {
+            todo!()
+        };
 
-    if let Err(s) = sparreal_kernel::boot::start(text_va, platform_info) {
-        early_dbgln(s);
+        if let Err(s) = sparreal_kernel::boot::start(text_va, platform_info) {
+            early_dbgln(s);
+        }
     }
-
     shutdown()
 }
 
