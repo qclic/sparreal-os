@@ -11,6 +11,7 @@ spin = "0.9"
 page-table-generic = "0.5"
 rdrive = "0.1"
 sparreal-macros = { workspace = true }
+arrayvec = { version = "0.7", default-features = false }
 
 [dependencies.anyhow]
 default-features = false

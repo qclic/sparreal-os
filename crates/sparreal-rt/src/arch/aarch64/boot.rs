@@ -202,19 +202,3 @@ fn init_debug(fdt: *mut u8) -> Option<()> {
     }
     Some(())
 }
-
-fn setup_el2() {
-    // Set EL1 to 64bit.
-    // Enable `IMO` and `FMO` to make sure that:
-    // * Physical IRQ interrupts are taken to EL2;
-    // * Virtual IRQ interrupts are enabled;
-    // * Physical FIQ interrupts are taken to EL2;
-    // * Virtual FIQ interrupts are enabled.
-    HCR_EL2.modify(
-        HCR_EL2::VM::Enable
-            + HCR_EL2::RW::EL1IsAarch64
-            + HCR_EL2::IMO::EnableVirtualIRQ // Physical IRQ Routing.
-            + HCR_EL2::FMO::EnableVirtualFIQ // Physical FIQ Routing.
-            + HCR_EL2::TSC::EnableTrapEl1SmcToEl2,
-    );
-}
