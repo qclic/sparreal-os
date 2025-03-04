@@ -1,107 +1,34 @@
-#![allow(unused)]
-
-use core::arch::asm;
-
-use aarch64_cpu::{asm::barrier::*, registers::*};
-
-use super::CacheOp;
-
-#[inline(always)]
-fn cache_line_size() -> usize {
-    unsafe {
-        let mut ctr_el0: u64;
-        asm!("mrs {}, ctr_el0", out(reg) ctr_el0);
-        let log2_cache_line_size = ((ctr_el0 >> 16) & 0xF) as usize;
-        // Calculate the cache line size
-        4 << log2_cache_line_size
-    }
-}
-
-/// Performs a cache operation on all memory.
-pub fn dcache_all(op: CacheOp) {
-    let clidr = CLIDR_EL1.get();
-
-    for level in 0..8 {
-        let ty = (clidr >> (level * 3)) & 0b111;
-        if ty == 0 {
-            return;
-        }
-
-        dcache_level(op, level);
-    }
-    dsb(SY);
-    isb(SY);
-}
-
-/// Performs a cache operation on a range of memory.
-#[inline]
-pub fn dcache_range(op: CacheOp, addr: usize, size: usize) {
-    let start = addr;
-    let end = start + size;
-    let cache_line_size = cache_line_size();
-
-    let mut aligned_addr = addr & !(cache_line_size - 1);
-
-    while aligned_addr < end {
-        _dcache_line(op, aligned_addr);
-        aligned_addr += cache_line_size;
-    }
-
-    dsb(SY);
-    isb(SY);
-}
-
-/// Performs a cache operation on a cache line.
-#[inline]
-fn _dcache_line(op: CacheOp, addr: usize) {
-    unsafe {
-        match op {
-            CacheOp::Invalidate => asm!("dc ivac, {0}", in(reg) addr),
-            CacheOp::Clean => asm!("dc cvac, {0}", in(reg) addr),
-            CacheOp::CleanAndInvalidate => asm!("dc civac, {0}", in(reg) addr),
-        }
-    }
-}
-
-/// Performs a cache operation on a cache line.
-#[inline]
-pub fn dcache_line(op: CacheOp, addr: usize) {
-    _dcache_line(op, addr);
-    dsb(SY);
-    isb(SY);
-}
-
-/// Performs a cache operation on a cache level.
-/// https://developer.arm.com/documentation/ddi0601/2024-12/AArch64-Instructions/DC-CISW--Data-or-unified-Cache-line-Clean-and-Invalidate-by-Set-Way
-#[inline]
-fn dcache_level(op: CacheOp, level: u64) {
-    assert!(level < 8, "armv8 level range is 0-7");
-
-    isb(SY);
-    CSSELR_EL1.write(CSSELR_EL1::InD::Data + CSSELR_EL1::Level.val(level));
-    isb(SY);
-    let lines = CCSIDR_EL1.read(CCSIDR_EL1::LineSize) as u32;
-    let ways = CCSIDR_EL1.read(CCSIDR_EL1::AssociativityWithCCIDX) as u32;
-    let sets = CCSIDR_EL1.read(CCSIDR_EL1::NumSetsWithCCIDX) as u32;
-
-    let l = lines + 4;
-
-    // Calculate bit position of number of ways
-    let way_adjust = ways.leading_zeros();
-
-    // Loop over sets and ways
-    for set in 0..sets {
-        for way in 0..ways {
-            let set_way = (way << way_adjust) | (set << l);
-
-            let cisw = (level << 1) | set_way as u64;
-            unsafe {
-                match op {
-                    CacheOp::Invalidate => asm!("dc isw, {0}", in(reg) cisw),
-                    CacheOp::Clean => asm!("dc csw, {0}", in(reg) cisw),
-                    CacheOp::CleanAndInvalidate => asm!("dc cisw, {0}", in(reg) cisw),
-                }
-            }
-        }
-    }
+pub unsafe fn cache_invalidate(cache_level: usize) {
+    core::arch::asm!(
+        r#"
+        msr csselr_el1, {0}
+        mrs x4, ccsidr_el1 // read cache size id.
+        and x1, x4, #0x7
+        add x1, x1, #0x4 // x1 = cache line size.
+        ldr x3, =0x7fff
+        and x2, x3, x4, lsr #13 // x2 = cache set number - 1.
+        ldr x3, =0x3ff
+        and x3, x3, x4, lsr #3 // x3 = cache associativity number - 1.
+        clz w4, w3 // x4 = way position in the cisw instruction.
+        mov x5, #0 // x5 = way counter way_loop.
+    // way_loop:
+    1:
+        mov x6, #0 // x6 = set counter set_loop.
+    // set_loop:
+    2:
+        lsl x7, x5, x4
+        orr x7, {0}, x7 // set way.
+        lsl x8, x6, x1
+        orr x7, x7, x8 // set set.
+        dc cisw, x7 // clean and invalidate cache line.
+        add x6, x6, #1 // increment set counter.
+        cmp x6, x2 // last set reached yet?
+        ble 2b // if not, iterate set_loop,
+        add x5, x5, #1 // else, next way.
+        cmp x5, x3 // last way reached yet?
+        ble 1b // if not, iterate way_loop
+        "#,
+        in(reg) cache_level,
+        options(nostack)
+    );
 }

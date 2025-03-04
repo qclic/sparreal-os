@@ -1,32 +1,225 @@
-use core::arch::asm;
+use core::{
+    arch::asm,
+    ptr::slice_from_raw_parts,
+    sync::atomic::{fence, Ordering},
+};
 
-use aarch64_cpu::{asm::barrier::*, registers::*};
+use aarch64_cpu::{
+    asm::barrier::{self, *},
+    registers::*,
+};
+use buddy_system_allocator::Heap;
+use memory_addr::{pa_range, VirtAddr};
 use page_table_arm::*;
 use page_table_generic::*;
-use sparreal_kernel::{
-    io::print::{early_dbg, early_dbg_hexln},
-    mem::va_offset,
-    platform_if::*,
-};
-use sparreal_macros::api_impl;
 
+use crate::{
+    arch::boot::rust_main,
+    debug::*,
+    mem::{
+        self, boot_stack, boot_stack_space, debug_space,
+        space::{Space, SPACE_SET},
+        va_offset,
+    },
+};
+
+pub type TableRef<'a> = PageTableRef<'a, PageTableImpl>;
+
+pub fn get_table() -> TableRef<'static> {
+    PageTableRef::<PageTableImpl>::from_addr(
+        (TTBR0_EL2.read(TTBR0_EL2::BADDR) << 1) as usize,
+        PageTableImpl::level(),
+    )
+}
+
+pub fn set_table(table: TableRef<'_>) {
+    TTBR0_EL2.set(table.paddr() as _);
+}
+
+pub fn flush_table(addr: Option<VirtAddr>) {
+    unsafe {
+        if let Some(_addr) = addr {
+            todo!()
+        } else {
+            asm!("tlbi alle2is; dsb sy; isb");
+        }
+    }
+}
+
+struct TableAlloc(Heap<32>);
+impl Access for TableAlloc {
+    fn va_offset(&self) -> usize {
+        0
+    }
+
+    unsafe fn alloc(&mut self, layout: core::alloc::Layout) -> Option<core::ptr::NonNull<u8>> {
+        self.0.alloc(layout).ok()
+    }
+
+    unsafe fn dealloc(&mut self, ptr: core::ptr::NonNull<u8>, layout: core::alloc::Layout) {
+        self.0.dealloc(ptr, layout);
+    }
+}
+
+pub fn init() -> ! {
+    fence(Ordering::SeqCst);
+    dbgln("init page table");
+
+    mair_el2_apply();
+
+    let mut access = TableAlloc(Heap::<32>::new());
+
+    let stack_space = boot_stack_space();
+    let stack_top = stack_space.virt().end.as_usize();
+
+    // 临时用栈底储存页表项
+    let tmp_pt = stack_space.phys.start.as_usize();
+
+    dbg_mem("stack", boot_stack());
+    dbg("tmp pt: ");
+    dbg_hexln(tmp_pt as _);
+
+    unsafe {
+        let imag_spaces = mem::kernel_imag_spaces::<24>();
+        for one in imag_spaces {
+            SPACE_SET.push(one);
+        }
+        access.0.init(tmp_pt, 1024 * 1024);
+
+        let mut table = PageTableRef::<PageTableImpl>::create_empty(&mut access).unwrap();
+
+        if va_offset() > 0 {
+            for space in SPACE_SET.iter() {
+                map_space(&mut table, space, &mut access);
+            }
+        }
+
+        map_space(&mut table, &stack_space, &mut access);
+        SPACE_SET.push(stack_space);
+
+        let debug_space = debug_space();
+        map_space(&mut table, &debug_space, &mut access);
+        SPACE_SET.push(debug_space);
+
+        if let Some(fdt) = mem::get_fdt() {
+            for memory in fdt.memory() {
+                for region in memory.regions() {
+                    map_direct(
+                        &mut table,
+                        &*slice_from_raw_parts(region.address, region.size),
+                        AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
+                        CacheSetting::Normal,
+                        &mut access,
+                        "memory",
+                    );
+                }
+            }
+        }
+
+        // Enable page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
+        TCR_EL2.write(
+            TCR_EL2::PS::Bits_48
+                + TCR_EL2::TG0::KiB_4
+                + TCR_EL2::SH0::Inner
+                + TCR_EL2::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+                + TCR_EL2::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+                + TCR_EL2::T0SZ.val(16),
+        );
+
+        TTBR0_EL2.set(table.paddr() as _);
+
+        barrier::isb(barrier::SY);
+
+        asm!("tlbi alle2is; dsb sy; isb");
+        dbg("sp: ");
+        dbg_hexln(stack_top as _);
+
+        // Enable the MMU and turn on I-cache and D-cache
+        SCTLR_EL2.modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
+        isb(SY);
+
+        asm!(
+            "MOV      sp,  {stack}",
+            "LDR      x8,  ={entry}",
+            "BLR      x8",
+            "B       .",
+            stack = in(reg) stack_top,
+            entry = sym rust_main,
+            options(nomem, nostack,noreturn)
+        )
+    }
+}
+
+fn map_space(table: &mut PageTableRef<PageTableImpl>, space: &Space, access: &mut TableAlloc) {
+    let paddr = space.phys.start.as_usize();
+    let vaddr = space.virt().start.as_ptr();
+    let len = space.phys.size();
+
+    dbg("map ");
+    dbg_tb(space.name, 12);
+    dbg(": [");
+    dbg_hex(vaddr as usize as _);
+    dbg(", ");
+    dbg_hex(space.virt().end.as_usize() as _);
+    dbg(") -> [");
+    dbg_hex(paddr as _);
+    dbg(", ");
+    dbg_hex(space.phys.end.as_usize() as _);
+    dbgln(")");
+
+    unsafe {
+        if let Err(_e) = table.map_region(
+            MapConfig::new(vaddr, paddr, space.access, space.cache),
+            len,
+            true,
+            access,
+        ) {
+            dbgln("map failed!");
+        }
+    }
+}
+
+fn map_direct(
+    table: &mut PageTableRef<PageTableImpl>,
+    range: &[u8],
+    privilege_access: AccessSetting,
+    cache_setting: CacheSetting,
+    access: &mut TableAlloc,
+    name: &'static str,
+) {
+    map_space(
+        table,
+        &Space {
+            name,
+            phys: pa_range!(range.as_ptr_range().start as usize..range.as_ptr_range().end as usize),
+            offset: 0,
+            access: privilege_access,
+            cache: cache_setting,
+        },
+        access,
+    );
+}
+
+fn mair_el2_apply() {
+    let attr0 = MAIR_EL2::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck;
+    // Normal memory
+    let attr1 = MAIR_EL2::Attr1_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc
+        + MAIR_EL2::Attr1_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc;
+    let attr2 =
+        MAIR_EL2::Attr2_Normal_Inner::NonCacheable + MAIR_EL2::Attr2_Normal_Outer::NonCacheable;
+
+    MAIR_EL2.write(attr0 + attr1 + attr2);
+}
+
+#[derive(Clone, Copy)]
 pub struct PageTableImpl;
 
-#[api_impl]
-impl MMU for PageTableImpl {
-    unsafe fn flush_tlb(addr: *const u8) {
-        unsafe { asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) addr as usize) };
-    }
-
-    fn flush_tlb_all() {
-        unsafe { asm!("tlbi vmalle1is; dsb nsh; isb") };
-    }
-
+impl PTEArch for PageTableImpl {
     fn page_size() -> usize {
         0x1000
     }
 
-    fn table_level() -> usize {
+    fn level() -> usize {
         4
     }
 
@@ -63,21 +256,6 @@ impl MMU for PageTableImpl {
         }
 
         if !privilege.executable() {
-            flags |= PTEFlags::PXN;
-        }
-
-        let user = &config.setting.user_access;
-
-        if user.readable() {
-            flags |= PTEFlags::AP_EL0;
-        }
-
-        if user.writable() {
-            flags |= PTEFlags::AP_EL0;
-            flags.remove(PTEFlags::AP_RO);
-        }
-
-        if !user.executable() {
             flags |= PTEFlags::UXN;
         }
 
@@ -116,7 +294,7 @@ impl MMU for PageTableImpl {
                 privilege_access |= AccessSetting::Write;
             }
 
-            if !flags.contains(PTEFlags::PXN) {
+            if !flags.contains(PTEFlags::UXN) {
                 privilege_access |= AccessSetting::Execute;
             }
 
@@ -126,10 +304,6 @@ impl MMU for PageTableImpl {
                 if !flags.contains(PTEFlags::AP_RO) {
                     user_access |= AccessSetting::Write;
                 }
-            }
-
-            if !flags.contains(PTEFlags::UXN) {
-                user_access |= AccessSetting::Execute;
             }
         }
 
@@ -143,67 +317,6 @@ impl MMU for PageTableImpl {
                 user_access,
                 cache_setting,
             },
-        }
-    }
-
-    fn set_kernel_table(addr: usize) {
-        TTBR1_EL1.set_baddr(addr as _);
-        Self::flush_tlb_all();
-    }
-
-    fn get_kernel_table() -> usize {
-        TTBR1_EL1.get_baddr() as _
-    }
-
-    fn set_user_table(addr: usize) {
-        TTBR0_EL1.set_baddr(addr as _);
-        Self::flush_tlb_all();
-    }
-
-    fn get_user_table() -> usize {
-        TTBR0_EL1.get_baddr() as _
-    }
-
-    fn enable_mmu(stack_top: usize, jump_to: usize) -> ! {
-        MAIRDefault::mair_el1_apply();
-
-        // Enable TTBR0 and TTBR1 walks, page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
-        let tcr_flags0 = TCR_EL1::EPD0::EnableTTBR0Walks
-            + TCR_EL1::TG0::KiB_4
-            + TCR_EL1::SH0::Inner
-            + TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL1::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL1::T0SZ.val(16);
-        let tcr_flags1 = TCR_EL1::EPD1::EnableTTBR1Walks
-            + TCR_EL1::TG1::KiB_4
-            + TCR_EL1::SH1::Inner
-            + TCR_EL1::ORGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL1::IRGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-            + TCR_EL1::T1SZ.val(16);
-        TCR_EL1.write(TCR_EL1::IPS::Bits_48 + tcr_flags0 + tcr_flags1);
-
-        early_dbg("TCR_EL1: ");
-        early_dbg_hexln(TCR_EL1.get());
-        unsafe {
-            crate::debug::mmu_add_offset(va_offset());
-
-            asm!("tlbi vmalle1");
-            isb(SY);
-            dsb(NSH);
-            // Enable the MMU and turn on I-cache and D-cache
-            SCTLR_EL1
-                .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
-            isb(SY);
-
-            asm!(
-                "MOV      sp,  {stack}",
-                "MOV      x8,  {entry}",
-                "BLR      x8",
-                "B       .",
-                stack = in(reg) stack_top,
-                entry = in(reg) jump_to,
-                options(nomem, nostack,noreturn)
-            )
         }
     }
 }

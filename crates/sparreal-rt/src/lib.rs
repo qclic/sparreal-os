@@ -1,24 +1,40 @@
 #![no_std]
 #![no_main]
 #![feature(naked_functions)]
-#![feature(used_with_arg)]
-#![feature(stmt_expr_attributes)]
+#![feature(concat_idents)]
+
+use core::hint::spin_loop;
+
+use log::info;
 
 extern crate alloc;
 
-extern crate sparreal_kernel;
-
 #[cfg_attr(target_arch = "aarch64", path = "arch/aarch64/mod.rs")]
 pub mod arch;
-mod config;
-mod debug;
-pub(crate) mod mem;
-pub mod prelude;
+pub mod debug;
+#[macro_use]
+pub mod logger;
+pub mod consts;
+pub mod device;
+pub mod error;
+pub mod hypercall;
+pub mod io;
+pub mod mem;
+pub mod percpu;
 
-// We export this static with an informative name so that if an application attempts to link
-// two copies of cortex-m-rt together, linking will fail. We also declare a links key in
-// Cargo.toml which is the more modern way to solve the same problem, but we have to keep
-// __ONCE__ around to prevent linking with versions before the links key was added.
-#[unsafe(export_name = "error: sparreal-rt appears more than once in the dependency graph")]
-#[doc(hidden)]
-pub static __ONCE__: () = ();
+pub mod time;
+
+pub fn vm_main() -> ! {
+    arch::install_trap_vector();
+
+    logger::init();
+    info!("VM start");
+
+    mem::init();
+
+    info!("mem setup ok");
+
+    loop {
+        spin_loop();
+    }
+}

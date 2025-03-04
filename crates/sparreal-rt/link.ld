@@ -2,11 +2,9 @@ OUTPUT_ARCH(%ARCH%)
 
 ENTRY(_start)
 
-
-
 SECTIONS
 {
-    . = %KERNEL_VADDR%;
+    . = %KERNEL_VADDR% ;
     _skernel = .;
 
     .text : ALIGN(4K) {
@@ -26,9 +24,8 @@ SECTIONS
         *(.srodata .srodata.*)
         *(.sdata2 .sdata2.*)
         . = ALIGN(4K);
-
         _erodata = .;
-    }
+    } 
    
     .data : ALIGN(4K) {
         _sdata = .;
@@ -36,11 +33,10 @@ SECTIONS
         . = ALIGN(4K);
         *(.data .data.*)
         *(.sdata .sdata.*)
-        *(.got .got.*)    
+        *(.got .got.*)
         _sdriver = .;
         *(.driver.register .driver.register.*)
         _edriver = .;
-        . = ALIGN(4K);
     } 
 
     .tdata : ALIGN(0x10) {
@@ -59,7 +55,7 @@ SECTIONS
     . = ALIGN(4K);
     _edata = .;
 
-    .bss : ALIGN(4K) {
+    .bss (NOLOAD) : ALIGN(4K) {
         _sbss = .;
         *(.bss .bss.*)
         *(.sbss .sbss.*)

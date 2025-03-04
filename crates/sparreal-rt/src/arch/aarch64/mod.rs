@@ -1,28 +1,32 @@
-use core::arch::asm;
-
-use aarch64_cpu::registers::*;
-use context::{__tcb_switch, Context};
-use log::trace;
-use sparreal_kernel::{
-    globals::global_val, mem::KernelRegions, platform::PlatformInfoKind, platform_if::*, println,
-    task::TaskControlBlock,
-};
-use sparreal_macros::api_impl;
-
-use crate::mem::driver_registers;
-
 mod boot;
 mod cache;
-mod context;
-mod gic;
-pub(crate) mod mmu;
-mod psci;
-mod timer;
+mod cpu;
+pub mod mmu;
 mod trap;
 
-pub(crate) fn cpu_id() -> usize {
-    const CPU_ID_MASK: u64 = 0xFF_FFFF + (0xFFFF_FFFF << 32);
-    (aarch64_cpu::registers::MPIDR_EL1.get() & CPU_ID_MASK) as usize
+use core::{arch::asm, hint::spin_loop};
+
+use aarch64_cpu::registers::*;
+use log::error;
+use sparreal_kernel::{driver::DriverRegisterSlice, mem::KernelRegions, platform_if::{CacheOp, Platform}};
+use sparreal_macros::api_impl;
+pub use trap::install_trap_vector;
+
+use crate::percpu::CPUHardId;
+
+pub fn shutdown() -> ! {
+    error!("shutdown unimplemented");
+    loop {
+        spin_loop();
+    }
+}
+
+pub fn is_mmu_enabled() -> bool {
+    SCTLR_EL2.matches_any(&[SCTLR_EL2::M::Enable])
+}
+
+pub fn cpu_id() -> CPUHardId {
+    (MPIDR_EL1.get() as usize & 0xff00ffffff).into()
 }
 
 struct PlatformImpl;
@@ -30,24 +34,30 @@ struct PlatformImpl;
 #[api_impl]
 impl Platform for PlatformImpl {
     fn kstack_size() -> usize {
-        crate::config::KERNEL_STACK_SIZE
+        // crate::config::KERNEL_STACK_SIZE
+        todo!()
     }
 
     fn kernel_regions() -> KernelRegions {
-        crate::mem::kernel_regions()
+        // crate::mem::kernel_regions()
+        todo!()
     }
 
     fn cpu_id() -> usize {
-        cpu_id()
+        // cpu_id()
+        todo!()
     }
 
     fn cpu_context_size() -> usize {
-        size_of::<Context>()
+        // size_of::<Context>()
+        todo!()
     }
 
     unsafe fn cpu_context_sp(ctx_ptr: *const u8) -> usize {
-        let ctx: &Context = unsafe { &*(ctx_ptr as *const Context) };
-        ctx.sp as _
+        // let ctx: &Context = unsafe { &*(ctx_ptr as *const Context) };
+        // ctx.sp as _
+
+        0
     }
 
     unsafe fn get_current_tcb_addr() -> *mut u8 {
@@ -62,27 +72,27 @@ impl Platform for PlatformImpl {
     ///
     /// `ctx_ptr` 是有效的上下文指针
     unsafe fn cpu_context_set_sp(ctx_ptr: *const u8, sp: usize) {
-        unsafe {
-            let ctx = &mut *(ctx_ptr as *mut Context);
-            ctx.sp = sp as _;
-        }
+        // unsafe {
+        //     let ctx = &mut *(ctx_ptr as *mut Context);
+        //     ctx.sp = sp as _;
+        // }
     }
 
     /// # Safety
     ///
     /// `ctx_ptr` 是有效的上下文指针
     unsafe fn cpu_context_set_pc(ctx_ptr: *const u8, pc: usize) {
-        unsafe {
-            let ctx = &mut *(ctx_ptr as *mut Context);
-            ctx.pc = pc as _;
-            ctx.lr = pc as _;
-        }
+        // unsafe {
+        //     let ctx = &mut *(ctx_ptr as *mut Context);
+        //     ctx.pc = pc as _;
+        //     ctx.lr = pc as _;
+        // }
     }
 
     unsafe fn cpu_context_switch(prev_ptr: *mut u8, next_ptr: *mut u8) {
-        let next = TaskControlBlock::from(next_ptr);
-        trace!("switch to: {:?}", unsafe { &*(next.sp as *const Context) });
-        unsafe { __tcb_switch(prev_ptr, next_ptr) };
+        // let next = TaskControlBlock::from(next_ptr);
+        // trace!("switch to: {:?}", unsafe { &*(next.sp as *const Context) });
+        // unsafe { __tcb_switch(prev_ptr, next_ptr) };
     }
 
     fn wait_for_interrupt() {
@@ -90,7 +100,8 @@ impl Platform for PlatformImpl {
     }
 
     fn shutdown() -> ! {
-        psci::system_off()
+        // psci::system_off()
+        todo!()
     }
 
     fn debug_put(b: u8) {
@@ -108,20 +119,21 @@ impl Platform for PlatformImpl {
     }
 
     fn on_boot_success() {
-        match &global_val().platform_info {
-            PlatformInfoKind::DeviceTree(fdt) => {
-                if let Err(e) = psci::setup_method_by_fdt(fdt.get()) {
-                    println!("{}", e);
-                }
-            }
-        }
+        // match &global_val().platform_info {
+        //     PlatformInfoKind::DeviceTree(fdt) => {
+        //         if let Err(e) = psci::setup_method_by_fdt(fdt.get()) {
+        //             println!("{}", e);
+        //         }
+        //     }
+        // }
     }
 
     fn dcache_range(op: CacheOp, addr: usize, size: usize) {
-        cache::dcache_range(op, addr, size);
+        // cache::dcache_range(op, addr, size);
     }
 
     fn driver_registers() -> DriverRegisterSlice {
-        DriverRegisterSlice::from_raw(driver_registers())
+        // DriverRegisterSlice::from_raw(driver_registers())
+        todo!()
     }
 }
