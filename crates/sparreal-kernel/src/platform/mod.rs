@@ -107,6 +107,34 @@ pub fn memory_main_available(
     Ok(start..main_memory.end)
 }
 
+pub fn regsions() -> Vec<RsvRegion> {
+    let mut ret = MMUImpl::rsv_regions().to_vec();
+    let main_available = memory_main_available(&global_val().platform_info).unwrap();
+    ret.push(RsvRegion::new(
+        main_available.clone(),
+        c"main mem",
+        AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
+        CacheSetting::Normal,
+        RegionKind::Other,
+    ));
+
+    for memory in phys_memorys() {
+        if memory.contains(&main_available.start) {
+            continue;
+        }
+
+        ret.push(RsvRegion::new(
+            memory,
+            c"memory",
+            AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
+            CacheSetting::Normal,
+            RegionKind::Other,
+        ));
+    }
+
+    ret
+}
+
 pub fn phys_memorys() -> ArrayVec<Range<PhysAddr>, 12> {
     match &global_val().platform_info {
         PlatformInfoKind::DeviceTree(fdt) => fdt.memorys(),
@@ -231,7 +259,7 @@ impl CPUHardId {
 
 impl Display for CPUHardId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:?}", self.0)
+        write!(f, "{:#x}", self.0)
     }
 }
 

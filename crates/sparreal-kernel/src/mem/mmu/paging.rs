@@ -59,58 +59,38 @@ impl Access for HeapGuard<'_> {
 
 pub fn init_table() {
     debug!("Initializing page table...");
-    let info = &global_val().platform_info;
-    let debugcon = info.debugcon();
+    let regions = platform::regsions();
 
     unsafe {
         let mut access = HeapGuard(ALLOCATOR.inner.lock());
 
         let mut table = PageTableRef::create_empty(&mut access).unwrap();
 
-        for memory in info.memorys() {
-            let size = memory.end - memory.start;
-            let vaddr = VirtAddr::from(memory.start.raw() + RegionKind::Other.va_offset());
+        for region in regions {
+            let size = region.range.end - region.range.start;
+            let vaddr = VirtAddr::from(region.range.start.raw() + region.kind.va_offset());
 
             trace!(
                 "Mapping memory [{}, {}) -> [{}, {})",
                 vaddr,
                 vaddr + size,
-                memory.start,
-                memory.end,
+                region.range.start,
+                region.range.end,
             );
 
             table
                 .map_region(
                     MapConfig::new(
                         vaddr.into(),
-                        memory.start.into(),
-                        AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
-                        CacheSetting::Normal,
+                        region.range.start.into(),
+                        region.access,
+                        region.cache,
                     ),
                     size,
                     true,
                     &mut access,
                 )
                 .unwrap()
-        }
-
-        if let Some(con) = debugcon {
-            let reg = con.addr.align_down(0x1000);
-
-            let vaddr = VirtAddr::from(reg.raw() + RegionKind::Other.va_offset());
-            trace!("Mapping stdout {} -> {}", vaddr, reg);
-
-            let _ = table.map_region(
-                MapConfig::new(
-                    vaddr.into(),
-                    reg.into(),
-                    AccessSetting::Read | AccessSetting::Write,
-                    CacheSetting::Device,
-                ),
-                0x1000,
-                true,
-                &mut access,
-            );
         }
 
         fence(Ordering::SeqCst);

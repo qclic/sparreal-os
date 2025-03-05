@@ -24,11 +24,6 @@ impl Platform for PlatformImpl {
         consts::STACK_SIZE
     }
 
-    fn kernel_regions() -> KernelRegions {
-        // crate::mem::kernel_regions()
-        todo!()
-    }
-
     fn cpu_id() -> usize {
         MPIDR_EL1.get() as usize & 0xff00ffffff
     }

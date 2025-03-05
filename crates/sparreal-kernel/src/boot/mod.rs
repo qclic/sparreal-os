@@ -72,7 +72,7 @@ fn print_start_msg() {
     // print_pair!("Kernel Size", "{:#}", byte_unit::Byte::from_u64(size as _));
     print_pair!("Kernel Stack Top", "{}", VirtAddr::from(stack_top()));
 
-    print_pair!("Start CPU", "{:?}", platform::cpu_hard_id());
+    print_pair!("Start CPU", "{}", platform::cpu_hard_id());
 
     if let Some(debug) = global_val().platform_info.debugcon() {
         if let Some(c) = debug.compatibles().next() {

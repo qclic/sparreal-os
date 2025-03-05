@@ -67,7 +67,9 @@ unsafe impl GlobalAlloc for KAllocator {
 }
 
 const STACK_BOTTOM: usize = 0xffff_e100_0000_0000;
-
+pub fn stack_bottom() -> usize {
+    STACK_BOTTOM
+}
 pub fn stack_top() -> usize {
     STACK_BOTTOM + kstack_size()
 }
@@ -84,8 +86,8 @@ pub(crate) fn init_heap() {
 }
 
 pub(crate) fn init_page_and_memory() {
-    // #[cfg(feature = "mmu")]
-    // mmu::init_table();
+    #[cfg(feature = "mmu")]
+    mmu::init_table();
 
     // let main = global_val().main_memory.clone();
 

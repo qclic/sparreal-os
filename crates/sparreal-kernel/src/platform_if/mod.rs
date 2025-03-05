@@ -7,7 +7,6 @@ pub use crate::mem::KernelRegions;
 
 #[api_trait]
 pub trait Platform {
-    fn kernel_regions() -> KernelRegions;
     fn kstack_size() -> usize;
     fn cpu_id() -> usize;
     fn cpu_context_size() -> usize;

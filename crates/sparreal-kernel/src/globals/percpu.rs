@@ -1,14 +1,18 @@
 use core::{
+    alloc::Layout,
     fmt::Display,
+    ops::Range,
     sync::atomic::{AtomicBool, Ordering},
 };
 
-use alloc::collections::btree_map::BTreeMap;
+use alloc::{alloc::alloc, collections::btree_map::BTreeMap};
 use log::debug;
 
 use crate::{
     irq,
-    platform::{CPUHardId, CPUId, cpu_hard_id, cpu_list},
+    mem::PhysAddr,
+    platform::{CPUHardId, CPUId, cpu_hard_id, cpu_list, kstack_size},
+    platform_if::{MMUImpl, RegionKind},
     time::TimerData,
 };
 
@@ -31,10 +35,10 @@ impl From<CPUId> for CPUHardId {
     }
 }
 
-#[derive(Default)]
 pub struct PerCPU {
     pub irq_chips: irq::CpuIrqChips,
     pub timer: TimerData,
+    pub stack: Range<PhysAddr>,
 }
 
 /// 初始化PerCPU
@@ -61,7 +65,28 @@ pub unsafe fn setup_percpu() {
 fn add_cpu(cpu: CPUHardId, idx: usize) {
     unsafe {
         let id = CPUId::from(idx);
-        (*PER_CPU.get()).insert(cpu, PerCPU::default());
+
+        let stack_bottom = if idx == 0 {
+            let region = MMUImpl::rsv_regions()
+                .into_iter()
+                .find(|o| matches!(o.kind, RegionKind::Stack))
+                .expect("stack region not found!");
+
+            region.range.start
+        } else {
+            let stack =
+                alloc::alloc::alloc(Layout::from_size_align(kstack_size(), 0x1000).unwrap());
+            PhysAddr::from(stack as usize - RegionKind::Other.va_offset())
+        };
+
+        (*PER_CPU.get()).insert(
+            cpu,
+            PerCPU {
+                irq_chips: Default::default(),
+                timer: Default::default(),
+                stack: stack_bottom..stack_bottom + kstack_size(),
+            },
+        );
         (*HARD_TO_SOFT.get()).insert(cpu, id);
         (*SOFT_TO_HARD.get()).insert(id, cpu);
     }
