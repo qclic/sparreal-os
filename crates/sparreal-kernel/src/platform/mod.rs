@@ -74,7 +74,7 @@ pub fn cpu_list() -> Vec<CPUInfo> {
 }
 
 pub fn cpu_hard_id() -> CPUHardId {
-    PlatformImpl::cpu_id().into()
+    CPUHardId(PlatformImpl::cpu_id())
 }
 
 pub fn platform_name() -> String {
@@ -200,13 +200,49 @@ pub fn module_registers() -> Vec<DriverRegister> {
     PlatformImpl::driver_registers().as_slice().to_vec()
 }
 
-pub type CPUHardId = rdrive::intc::CpuId;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct CPUId(usize);
 impl Display for CPUId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:?}", self.0)
+    }
+}
+impl From<CPUId> for usize {
+    fn from(value: CPUId) -> Self {
+        value.0
+    }
+}
+impl From<usize> for CPUId {
+    fn from(value: usize) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct CPUHardId(usize);
+
+impl CPUHardId {
+    pub(crate) unsafe fn new(id: usize) -> Self {
+        Self(id)
+    }
+}
+
+impl Display for CPUHardId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl From<rdrive::intc::CpuId> for CPUHardId {
+    fn from(value: rdrive::intc::CpuId) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<CPUHardId> for rdrive::intc::CpuId {
+    fn from(value: CPUHardId) -> Self {
+        Self::from(value.0)
     }
 }

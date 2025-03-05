@@ -110,7 +110,7 @@ impl IrqRegister {
             c.set_priority(irq, 0);
         }
 
-        c.set_target_cpu(irq, cpu_hard_id());
+        c.set_target_cpu(irq, cpu_hard_id().into());
         c.set_trigger(irq, self.param.cfg.trigger);
         c.irq_enable(irq);
         debug!("Enable irq {:?} on chip {:?}", irq, irq_parent);

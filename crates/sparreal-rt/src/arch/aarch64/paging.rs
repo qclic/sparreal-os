@@ -12,10 +12,10 @@ pub struct PageTableImpl;
 impl MMU for PageTableImpl {
     fn rsv_regions() -> ArrayVec<RsvRegion, 8> {
         let mut ret = crate::mem::rsv_regions();
-        let debug_reg = PhysAddr::new(super::debug::reg());
+        let debug_reg = PhysAddr::new(super::debug::reg()).align_down(0x1000);
 
         ret.push(RsvRegion::new(
-            (debug_reg..debug_reg + 0x1000).into(),
+            debug_reg..debug_reg + 0x1000,
             c"debug_uart",
             AccessSetting::Read | AccessSetting::Write,
             CacheSetting::Device,

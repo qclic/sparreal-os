@@ -34,7 +34,7 @@ impl Fdt {
             .map(|cpu| {
                 let reg = cpu.reg().unwrap().next().unwrap();
                 CPUInfo {
-                    cpu_id: (reg.address as usize).into(),
+                    cpu_id: super::CPUHardId(reg.address as usize),
                 }
             })
             .collect()

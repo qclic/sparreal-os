@@ -8,7 +8,6 @@ use core::{
 
 use alloc::collections::btree_map::BTreeMap;
 use log::debug;
-use percpu::PerCPU;
 
 pub use crate::platform::PlatformInfoKind;
 use crate::{
@@ -19,15 +18,16 @@ use crate::{
 mod once;
 mod percpu;
 
+pub(crate) use percpu::*;
+
 pub struct GlobalVal {
     pub platform_info: PlatformInfoKind,
     pub main_memory: Range<PhysAddr>,
-    percpu: BTreeMap<CPUHardId, percpu::PerCPU>,
+    percpu: BTreeMap<CPUId, percpu::PerCPU>,
 }
 
 struct LazyGlobal {
     g_ok: AtomicBool,
-    cpu_ok: AtomicBool,
     g: UnsafeCell<Option<GlobalVal>>,
 }
 
@@ -50,7 +50,6 @@ impl LazyGlobal {
     const fn new() -> Self {
         Self {
             g_ok: AtomicBool::new(false),
-            cpu_ok: AtomicBool::new(false),
             g: UnsafeCell::new(None),
         }
     }
@@ -102,46 +101,6 @@ pub(crate) unsafe fn setup(platform_info: PlatformInfoKind) -> Result<(), &'stat
     Ok(())
 }
 
-/// #Safty
-/// 需要在内存初始化完成之后调用
-pub(crate) unsafe fn setup_percpu() {
-    let cpus = cpu_list();
-    let g = unsafe { get_mut() };
-    for cpu in cpus {
-        let percpu = PerCPU::default();
-        g.percpu.insert(cpu.cpu_id, percpu);
-    }
-    GLOBAL.cpu_ok.store(true, Ordering::SeqCst);
 
-    debug!("per cpu data ok");
-}
 
-pub(crate) fn cpu_inited() -> bool {
-    GLOBAL.cpu_ok.load(Ordering::SeqCst)
-}
 
-pub(crate) fn cpu_global() -> &'static PerCPU {
-    cpu_global_meybeuninit().expect("CPU global is not init!")
-}
-
-pub(crate) fn cpu_global_meybeuninit() -> Option<&'static PerCPU> {
-    if !GLOBAL.cpu_ok.load(Ordering::SeqCst) {
-        return None;
-    }
-
-    let g = unsafe { get_mut() };
-    Some(g.percpu.get(&platform::cpu_hard_id()).unwrap())
-}
-
-pub(crate) unsafe fn cpu_global_mut() -> &'static mut PerCPU {
-    unsafe { cpu_global_mut_meybeunint().expect("CPU global is not init!") }
-}
-
-pub(crate) unsafe fn cpu_global_mut_meybeunint() -> Option<&'static mut PerCPU> {
-    if !GLOBAL.cpu_ok.load(Ordering::SeqCst) {
-        return None;
-    }
-
-    let g = unsafe { get_mut() };
-    Some(g.percpu.get_mut(&platform::cpu_hard_id()).unwrap())
-}

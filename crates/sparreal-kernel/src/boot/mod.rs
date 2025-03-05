@@ -34,13 +34,11 @@ pub extern "C" fn __start() -> ! {
 
     mem::init_heap();
 
+    unsafe { globals::setup_percpu() };
+
     print_start_msg();
 
-    PlatformImpl::on_boot_success();
-
     mem::init_page_and_memory();
-
-    unsafe { globals::setup_percpu() };
 
     driver::init();
 
