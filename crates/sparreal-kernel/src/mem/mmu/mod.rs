@@ -1,4 +1,4 @@
-use core::{alloc::Layout, ffi::CStr, ops::Range, ptr::NonNull};
+use core::{alloc::Layout, ffi::CStr, ops::Range, ptr::NonNull, sync::atomic::Ordering};
 
 use buddy_system_allocator::Heap;
 use page_table_generic::err::PagingError;
@@ -13,14 +13,14 @@ use crate::{
     io::print::{
         early_dbg, early_dbg_fmt, early_dbg_hex, early_dbg_hexln, early_dbg_range, early_dbgln,
     },
+    platform,
     platform_if::{MMUImpl, PlatformImpl},
 };
 
-use paging::PageTableRef;
 pub use paging::init_table;
 
 pub use super::addr2::PhysRange;
-use super::{Align, va_offset};
+use super::{Align, IO_OFFSET, TEXT_OFFSET, addr2::PhysAddr, va_offset};
 
 pub use arrayvec::ArrayVec;
 
@@ -67,8 +67,27 @@ impl RsvRegion {
         }
     }
 
+    pub fn new_with_len(
+        start: PhysAddr,
+        len: usize,
+        name: &'static CStr,
+        access: AccessSetting,
+        cache: CacheSetting,
+        kind: RsvRegionKind,
+    ) -> Self {
+        Self::new((start..start + len).into(), name, access, cache, kind)
+    }
+
     pub fn name(&self) -> &'static str {
         unsafe { CStr::from_ptr(self.name).to_str().unwrap() }
+    }
+
+    pub fn va_offset(&self) -> usize {
+        match self.kind {
+            RsvRegionKind::Image => TEXT_OFFSET.load(Ordering::Relaxed),
+            RsvRegionKind::Stack => todo!(),
+            RsvRegionKind::Other => IO_OFFSET,
+        }
     }
 }
 
@@ -86,8 +105,8 @@ pub struct BootMemoryRegion {
     pub access: AccessSetting,
     pub cache: CacheSetting,
 }
-pub fn new_boot_table() -> Result<usize, &'static str> {
 
+pub fn new_boot_table() -> Result<usize, &'static str> {
     let mut access = PageHeap(Heap::empty());
 
     let stack_region = MMUImpl::rsv_regions()
@@ -97,17 +116,42 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
 
     // 临时用栈底储存页表项
     let tmp_pt = stack_region.range.start.raw();
+    let tmp_size = stack_region.range.end.raw() - stack_region.range.start.raw();
 
-    unsafe { access.0.init(tmp_pt, 1024 * 1024) };
+    unsafe { access.0.init(tmp_pt, tmp_size) };
 
     let mut table =
         PageTableRef::create_empty(&mut access).map_err(|_| "page table allocator no memory")?;
 
     for region in MMUImpl::rsv_regions() {
-        early_dbgln(region.name());
+        map_region(&mut table, region.va_offset(), &region, &mut access);
     }
 
+    for memory in platform::phys_memorys() {
+        let region = RsvRegion::new(
+            memory.into(),
+            c"memory",
+            AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
+            CacheSetting::Normal,
+            RsvRegionKind::Other,
+        );
+        map_region(&mut table, 0, &region, &mut access);
+    }
 
+    let main_memory = RsvRegion::new(
+        global_val().main_memory.clone().into(),
+        c"main memory",
+        AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
+        CacheSetting::Normal,
+        RsvRegionKind::Other,
+    );
+
+    map_region(
+        &mut table,
+        main_memory.va_offset(),
+        &main_memory,
+        &mut access,
+    );
 
     let table_addr = table.paddr();
 
@@ -118,42 +162,33 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
 }
 
 fn map_region(
-    table: &mut PageTableRef<'_>,
+    table: &mut paging::PageTableRef<'_>,
     va_offset: usize,
-    region: &BootMemoryRegion,
+    region: &RsvRegion,
     access: &mut PageHeap,
 ) {
     let addr = region.range.start;
-    let size = region.range.end - region.range.start;
+    let size = region.range.end.raw() - region.range.start.raw();
 
     // let addr = align_down_1g(addr);
     // let size = align_up_1g(size);
-    let vaddr = addr + va_offset;
+    let vaddr = addr.raw() + va_offset;
 
     early_dbg("map region: [");
-    early_dbg(region.name);
+    early_dbg(region.name());
     early_dbg("] [");
     early_dbg_hex(vaddr as _);
     early_dbg(", ");
     early_dbg_hex((vaddr + size) as _);
     early_dbg(") -> [");
-    early_dbg_hex(addr as _);
+    early_dbg_hex(addr.raw() as _);
     early_dbg(", ");
-    early_dbg_hex((addr + size) as _);
+    early_dbg_hex((addr.raw() + size) as _);
     early_dbgln(")");
 
     unsafe {
         if let Err(e) = table.map_region(
-            MapConfig::new(addr as _, addr, region.access, region.cache),
-            size,
-            true,
-            access,
-        ) {
-            early_handle_err(e);
-        }
-
-        if let Err(e) = table.map_region(
-            MapConfig::new(vaddr as _, addr, region.access, region.cache),
+            MapConfig::new(vaddr as _, addr.raw(), region.access, region.cache),
             size,
             true,
             access,

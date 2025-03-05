@@ -9,21 +9,20 @@ use core::{
 use alloc::collections::btree_map::BTreeMap;
 use log::debug;
 use percpu::PerCPU;
-use platform::CpuId;
 
 pub use crate::platform::PlatformInfoKind;
 use crate::{
     mem::PhysAddr,
-    platform::{self, cpu_list},
+    platform::{self, cpu_list, CPUHardId, CPUId},
 };
 
+mod once;
 mod percpu;
 
 pub struct GlobalVal {
     pub platform_info: PlatformInfoKind,
-    pub kstack_top: PhysAddr,
-    pub main_memory: Range<PhysAddr>,
-    percpu: BTreeMap<CpuId, percpu::PerCPU>,
+    pub main_memory: Range<crate::mem::addr2::PhysAddr>,
+    percpu: BTreeMap<CPUHardId, percpu::PerCPU>,
 }
 
 struct LazyGlobal {
@@ -75,13 +74,10 @@ unsafe fn get_mut() -> &'static mut GlobalVal {
 /// # Safty
 /// 只能在其他CPU启动前调用
 pub(crate) unsafe fn setup(platform_info: PlatformInfoKind) -> Result<(), &'static str> {
-    let main_memory = platform_info
-        .main_memory()
-        .ok_or("No memory in platform info")?;
+    let main_memory = platform::memory_main_available()?;
 
     let g = GlobalVal {
         platform_info,
-        kstack_top: main_memory.end,
         main_memory,
         percpu: Default::default(),
     };
@@ -90,11 +86,11 @@ pub(crate) unsafe fn setup(platform_info: PlatformInfoKind) -> Result<(), &'stat
         GLOBAL.g.get().write(Some(g));
         GLOBAL.g_ok.store(true, Ordering::SeqCst);
 
-        match &mut get_mut().platform_info {
-            PlatformInfoKind::DeviceTree(fdt) => {
-                fdt.setup()?;
-            }
-        }
+        // match &mut get_mut().platform_info {
+        //     PlatformInfoKind::DeviceTree(fdt) => {
+        //         fdt.setup()?;
+        //     }
+        // }
     }
     Ok(())
 }
@@ -123,7 +119,7 @@ pub(crate) fn cpu_global_meybeuninit() -> Option<&'static PerCPU> {
     }
 
     let g = unsafe { get_mut() };
-    Some(g.percpu.get(&platform::cpu_id()).unwrap())
+    Some(g.percpu.get(&platform::cpu_hard_id()).unwrap())
 }
 
 pub(crate) unsafe fn cpu_global_mut() -> &'static mut PerCPU {
@@ -136,5 +132,5 @@ pub(crate) unsafe fn cpu_global_mut_meybeunint() -> Option<&'static mut PerCPU> 
     }
 
     let g = unsafe { get_mut() };
-    Some(g.percpu.get_mut(&platform::cpu_id()).unwrap())
+    Some(g.percpu.get_mut(&platform::cpu_hard_id()).unwrap())
 }

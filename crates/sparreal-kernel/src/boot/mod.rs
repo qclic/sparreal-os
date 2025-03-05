@@ -9,7 +9,7 @@ use crate::{
     io::{self, print::*},
     irq,
     logger::KLogger,
-    mem::{self, VirtAddr, region, va_offset},
+    mem::{self, VirtAddr, region, stack_top, va_offset},
     platform::{self, app_main, module_registers, platform_name, shutdown},
     platform_if::*,
     println, task, time,
@@ -83,13 +83,9 @@ fn print_start_msg() {
         region::bss().as_ptr_range().end as usize - region::text().as_ptr_range().start as usize;
 
     print_pair!("Kernel Size", "{:#}", byte_unit::Byte::from_u64(size as _));
-    print_pair!(
-        "Kernel Stack Top",
-        "{}",
-        VirtAddr::from(global_val().kstack_top)
-    );
+    print_pair!("Kernel Stack Top", "{}", stack_top());
 
-    print_pair!("Start CPU", "{:?}", platform::cpu_id());
+    print_pair!("Start CPU", "{:?}", platform::cpu_hard_id());
 
     if let Some(debug) = global_val().platform_info.debugcon() {
         if let Some(c) = debug.compatibles().next() {

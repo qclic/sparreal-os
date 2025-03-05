@@ -1,13 +1,13 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::ffi::CStr;
+use core::fmt::Display;
 use core::ops::Range;
 use core::ptr::NonNull;
-pub use rdrive::intc::CpuId;
 use rdrive::register::DriverRegister;
 
 use crate::globals::global_val;
-use crate::mem::PhysAddr;
+use crate::mem::{Align, PhysAddr};
 use crate::platform_if::*;
 use fdt::Fdt;
 
@@ -91,13 +91,41 @@ pub fn cpu_list() -> Vec<CPUInfo> {
     }
 }
 
-pub fn cpu_id() -> CpuId {
+pub fn cpu_hard_id() -> CPUHardId {
     PlatformImpl::cpu_id().into()
 }
 
 pub fn platform_name() -> String {
     match &global_val().platform_info {
         PlatformInfoKind::DeviceTree(fdt) => fdt.model_name().unwrap_or_default(),
+    }
+}
+
+pub fn memory_main_available() -> Result<Range<crate::mem::addr2::PhysAddr>, &'static str> {
+    let text = MMUImpl::rsv_regions()
+        .into_iter()
+        .find(|o| o.name().eq(".text"))
+        .ok_or("can not find .text")?;
+    let text_end = text.range.end;
+
+    let main_memory = phys_memorys()
+        .into_iter()
+        .find(|m| m.contains(&text_end))
+        .ok_or("can not find main memory")?;
+
+    let mut start = crate::mem::addr2::PhysAddr::new(0);
+    for rsv in MMUImpl::rsv_regions() {
+        if main_memory.contains(&rsv.range.end) && rsv.range.end > start {
+            start = rsv.range.end;
+        }
+    }
+    start = start.align_up(0x1000);
+    Ok(start..main_memory.end)
+}
+
+pub fn phys_memorys() -> ArrayVec<Range<crate::mem::addr2::PhysAddr>, 12> {
+    match &global_val().platform_info {
+        PlatformInfoKind::DeviceTree(fdt) => fdt.memorys(),
     }
 }
 
@@ -134,7 +162,7 @@ pub fn app_main() {
 
 #[derive(Debug)]
 pub struct CPUInfo {
-    pub cpu_id: CpuId,
+    pub cpu_id: CPUHardId,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -186,4 +214,15 @@ impl SerialPort {
 
 pub fn module_registers() -> Vec<DriverRegister> {
     PlatformImpl::driver_registers().as_slice().to_vec()
+}
+
+pub type CPUHardId = rdrive::intc::CpuId;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+pub struct CPUId(usize);
+impl Display for CPUId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
 }

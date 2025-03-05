@@ -84,6 +84,12 @@ pub type PhysAddr = Phys<u8>;
 pub type VirtRange = CRange<VirtAddr>;
 pub type PhysRange = CRange<PhysAddr>;
 
+impl<T> From<Virt<T>> for *mut T {
+    fn from(value: Virt<T>) -> *mut T {
+        value.0 as _
+    }
+}
+
 #[macro_export]
 macro_rules! pa {
     (val: $val:expr) => {

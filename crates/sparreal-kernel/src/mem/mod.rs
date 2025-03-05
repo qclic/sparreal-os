@@ -68,9 +68,14 @@ unsafe impl GlobalAlloc for KAllocator {
 }
 
 static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
+const STACK_BOTTOM: usize = 0xffff_e100_0000_0000;
+
+pub fn stack_top() -> usize {
+    STACK_BOTTOM + kstack_size()
+}
 
 #[cfg(feature = "mmu")]
-pub const IO_OFFSET: usize = 0xfffe_0000_0000_0000;
+pub const IO_OFFSET: usize = 0xffff_f000_0000_0000;
 #[cfg(not(feature = "mmu"))]
 pub const IO_OFFSET: usize = 0;
 
@@ -98,47 +103,47 @@ fn va_offset_now() -> usize {
 }
 
 pub(crate) fn init_heap() {
-    let main = global_val().main_memory.clone();
-    let mut start = VirtAddr::from(main.start);
-    let mut end = VirtAddr::from(main.end);
+    // let main = global_val().main_memory.clone();
+    // let mut start = VirtAddr::from(main.start);
+    // let mut end = VirtAddr::from(main.end);
 
-    let bss_end = crate::mem::region::bss().as_ptr_range().end.into();
+    // let bss_end = crate::mem::region::bss().as_ptr_range().end.into();
 
-    if (start..end).contains(&bss_end) {
-        start = bss_end;
-    }
+    // if (start..end).contains(&bss_end) {
+    //     start = bss_end;
+    // }
 
-    let stack_top = VirtAddr::from(global_val().kstack_top);
-    let stack_bottom = stack_top - kstack_size();
+    // let stack_top = VirtAddr::from(global_val().kstack_top);
+    // let stack_bottom = stack_top - kstack_size();
 
-    if (start..end).contains(&stack_bottom) {
-        end = stack_bottom;
-    }
+    // if (start..end).contains(&stack_bottom) {
+    //     end = stack_bottom;
+    // }
 
-    println!("heap add memory [{}, {})", start, end);
-    ALLOCATOR
-        .add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.as_mut_ptr(), end - start) });
+    // println!("heap add memory [{}, {})", start, end);
+    // ALLOCATOR
+    //     .add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.as_mut_ptr(), end - start) });
 
-    println!("heap initialized");
+    // println!("heap initialized");
 }
 
 pub(crate) fn init_page_and_memory() {
-    #[cfg(feature = "mmu")]
-    mmu::init_table();
+    // #[cfg(feature = "mmu")]
+    // mmu::init_table();
 
-    let main = global_val().main_memory.clone();
+    // let main = global_val().main_memory.clone();
 
-    for memory in global_val().platform_info.memorys() {
-        if memory.contains(&main.start) {
-            continue;
-        }
-        let start = VirtAddr::from(memory.start);
-        let end = VirtAddr::from(memory.end);
-        let len = memory.end - memory.start;
+    // for memory in global_val().platform_info.memorys() {
+    //     if memory.contains(&main.start) {
+    //         continue;
+    //     }
+    //     let start = VirtAddr::from(memory.start);
+    //     let end = VirtAddr::from(memory.end);
+    //     let len = memory.end - memory.start;
 
-        debug!("Heap add memory [{}, {})", start, end);
-        ALLOCATOR.add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.as_mut_ptr(), len) });
-    }
+    //     debug!("Heap add memory [{}, {})", start, end);
+    //     ALLOCATOR.add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.as_mut_ptr(), len) });
+    // }
 }
 
 #[repr(C)]
@@ -174,5 +179,3 @@ pub fn iomap(paddr: PhysAddr, _size: usize) -> NonNull<u8> {
         NonNull::new_unchecked(paddr.as_usize() as *mut u8)
     }
 }
-
-

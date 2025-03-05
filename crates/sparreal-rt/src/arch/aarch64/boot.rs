@@ -1,13 +1,12 @@
 use core::{
     arch::{asm, naked_asm},
     hint::spin_loop,
-    ptr::NonNull,
 };
 
 use aarch64_cpu::{asm::barrier, registers::*};
 use sparreal_kernel::{globals::PlatformInfoKind, io::print::early_dbgln, platform::shutdown};
 
-use super::{debug, paging};
+use super::debug;
 use crate::mem::{self, clean_bss};
 
 const FLAG_LE: usize = 0b0;

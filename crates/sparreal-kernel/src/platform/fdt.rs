@@ -1,5 +1,6 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use arrayvec::ArrayVec;
 use core::{
     ops::Range,
     ptr::{NonNull, slice_from_raw_parts, slice_from_raw_parts_mut},
@@ -43,12 +44,12 @@ impl Fdt {
             .collect()
     }
 
-    pub fn setup(&mut self) -> Result<(), &'static str> {
-        let main_memory = global_val().main_memory.clone();
-        let fdt_start = self.move_to(main_memory.end.as_usize());
-        unsafe { globals::edit(|g| g.kstack_top = fdt_start.into()) };
-        Ok(())
-    }
+    // pub fn setup(&mut self) -> Result<(), &'static str> {
+    //     let main_memory = global_val().main_memory.clone();
+    //     let fdt_start = self.move_to(main_memory.end.as_usize());
+    //     unsafe { globals::edit(|g| g.kstack_top = fdt_start.into()) };
+    //     Ok(())
+    // }
 
     fn move_to(&mut self, dst_end: usize) -> usize {
         let size = self.get().total_size();
@@ -79,8 +80,8 @@ impl Fdt {
         unsafe { NonNull::new_unchecked(VirtAddr::from(self.0).as_mut_ptr()) }
     }
 
-    pub fn memorys(&self) -> Vec<Range<PhysAddr>> {
-        let mut out = Vec::new();
+    pub fn memorys(&self) -> ArrayVec<Range<crate::mem::addr2::PhysAddr>, 12> {
+        let mut out = ArrayVec::new();
 
         let fdt = self.get();
 
