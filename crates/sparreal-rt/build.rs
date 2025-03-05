@@ -18,6 +18,11 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rustc-link-search={}", out_dir().display());
 
+    println!("cargo::rustc-check-cfg=cfg(hard_float)");
+    if std::env::var("TARGET").unwrap() == "aarch64-unknown-none" {
+        println!("cargo::rustc-cfg=hard_float");
+    }
+
     gen_const();
 
     let arch = Arch::default();

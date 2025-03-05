@@ -4,9 +4,11 @@ use core::{
 };
 
 use aarch64_cpu::{asm::barrier, registers::*};
-use sparreal_kernel::{globals::PlatformInfoKind, io::print::early_dbgln, platform::shutdown};
+use sparreal_kernel::{
+    globals::PlatformInfoKind, io::print::early_dbgln, platform::shutdown, platform_if::CacheOp,
+};
 
-use super::debug;
+use super::{cache, debug};
 use crate::mem::{self, clean_bss};
 
 const FLAG_LE: usize = 0b0;
@@ -75,6 +77,12 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
     clean_bss();
     enable_fp();
     debug::init_by_fdt(fdt);
+    unsafe extern "C" {
+        fn vector_table_el1();
+    }
+
+    VBAR_EL1.set(vector_table_el1 as usize as _);
+
     unsafe {
         let fdt = mem::save_fdt(fdt);
 
@@ -189,9 +197,4 @@ fn switch_to_el2() {
 fn enable_fp() {
     CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
     barrier::isb(barrier::SY);
-}
-pub fn rust_main() -> ! {
-    loop {
-        spin_loop();
-    }
 }

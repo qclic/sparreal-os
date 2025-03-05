@@ -6,8 +6,11 @@ use sparreal_kernel::{mem::KernelRegions, platform_if::*};
 use crate::consts;
 
 mod boot;
+mod cache;
 mod debug;
 mod paging;
+mod trap;
+mod context;
 
 pub fn is_mmu_enabled() -> bool {
     SCTLR_EL2.matches_any(&[SCTLR_EL2::M::Enable])
@@ -27,8 +30,7 @@ impl Platform for PlatformImpl {
     }
 
     fn cpu_id() -> usize {
-        // cpu_id()
-        todo!()
+        MPIDR_EL1.get() as usize & 0xff00ffffff
     }
 
     fn cpu_context_size() -> usize {
@@ -112,7 +114,7 @@ impl Platform for PlatformImpl {
     }
 
     fn dcache_range(op: CacheOp, addr: usize, size: usize) {
-        // cache::dcache_range(op, addr, size);
+        cache::dcache_range(op, addr, size);
     }
 
     fn driver_registers() -> DriverRegisterSlice {

@@ -198,7 +198,7 @@ impl MMU for PageTableImpl {
         early_dbg("TCR_EL1: ");
         early_dbg_hexln(TCR_EL1.get());
         unsafe {
-            super::debug::mmu_add_offset(IO_OFFSET);
+            // super::debug::mmu_add_offset(IO_OFFSET);
 
             asm!("tlbi vmalle1");
             isb(SY);

@@ -37,7 +37,7 @@ pub unsafe fn mmu_add_offset(va_offset: usize) {
 }
 
 pub fn reg() -> usize {
-    REG_BASE.load(Ordering::Relaxed)
+    REG_BASE.load(Ordering::SeqCst)
 }
 
 pub fn put(byte: u8) {
