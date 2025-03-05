@@ -23,18 +23,17 @@ pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(
     set_user_table(table);
     set_kernel_table(table);
 
-    flush_tlb_all();
-
-    fence(Ordering::SeqCst);
-
+    let stack_top = stack_top();
     let jump_to = __start as usize + text_va_offset;
-    // let stack_top = global_val().kstack_top.as_usize() + text_va_offset;
-    unsafe { set_va_offset_now(text_va_offset) };
 
     early_dbg("Jump to __start: ");
     early_dbg_hex(jump_to as _);
     early_dbg(", stack top: ");
-    early_dbg_hexln(stack_top() as _);
+    early_dbg_hexln(stack_top as _);
 
-    MMUImpl::enable_mmu(stack_top(), jump_to)
+    flush_tlb_all();
+    fence(Ordering::SeqCst);
+
+    early_dbgln("begin enable mmu");
+    MMUImpl::enable_mmu(stack_top, jump_to)
 }

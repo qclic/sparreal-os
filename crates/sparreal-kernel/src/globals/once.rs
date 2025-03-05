@@ -15,7 +15,9 @@ impl<T> OnceStatic<T> {
     ///
     /// 仅在core0初始化时调用
     pub unsafe fn set(&self, v: T) {
-        *self.0.get() = v;
+        unsafe {
+            *self.0.get() = v;
+        }
     }
 
     /// 获取mut 引用

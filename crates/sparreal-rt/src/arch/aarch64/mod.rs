@@ -3,6 +3,8 @@ use core::arch::asm;
 use aarch64_cpu::registers::*;
 use sparreal_kernel::{mem::KernelRegions, platform_if::*};
 
+use crate::consts;
+
 mod boot;
 mod debug;
 mod paging;
@@ -16,8 +18,7 @@ struct PlatformImpl;
 #[api_impl]
 impl Platform for PlatformImpl {
     fn kstack_size() -> usize {
-        // crate::config::KERNEL_STACK_SIZE
-        todo!()
+        consts::STACK_SIZE
     }
 
     fn kernel_regions() -> KernelRegions {

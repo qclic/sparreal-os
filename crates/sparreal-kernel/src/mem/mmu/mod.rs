@@ -9,7 +9,7 @@ mod paging;
 pub use paging::iomap;
 
 use crate::{
-    globals::global_val,
+    globals::{cpu_inited, global_val},
     io::print::{
         early_dbg, early_dbg_fmt, early_dbg_hex, early_dbg_hexln, early_dbg_range, early_dbgln,
     },
@@ -20,7 +20,7 @@ use crate::{
 pub use paging::init_table;
 
 pub use super::addr2::PhysRange;
-use super::{Align, IO_OFFSET, TEXT_OFFSET, addr2::PhysAddr, va_offset};
+use super::{Align, IO_OFFSET, STACK_BOTTOM, TEXT_OFFSET, addr2::PhysAddr, va_offset};
 
 pub use arrayvec::ArrayVec;
 
@@ -85,7 +85,13 @@ impl RsvRegion {
     pub fn va_offset(&self) -> usize {
         match self.kind {
             RsvRegionKind::Image => TEXT_OFFSET.load(Ordering::Relaxed),
-            RsvRegionKind::Stack => todo!(),
+            RsvRegionKind::Stack => {
+                if cpu_inited() {
+                    todo!()
+                } else {
+                    STACK_BOTTOM - self.range.start.raw()
+                }
+            }
             RsvRegionKind::Other => IO_OFFSET,
         }
     }
@@ -116,7 +122,10 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
 
     // 临时用栈底储存页表项
     let tmp_pt = stack_region.range.start.raw();
-    let tmp_size = stack_region.range.end.raw() - stack_region.range.start.raw();
+    let tmp_size = 0x1000 * 200;
+
+    early_dbg("tmp table alloc: @");
+    early_dbg_hexln(tmp_pt as _);
 
     unsafe { access.0.init(tmp_pt, tmp_size) };
 
@@ -174,8 +183,19 @@ fn map_region(
     // let size = align_up_1g(size);
     let vaddr = addr.raw() + va_offset;
 
-    early_dbg("map region: [");
+    const NAME_LEN: usize = 12;
+
+    let name_right = if region.name().len() < NAME_LEN {
+        NAME_LEN - region.name().len()
+    } else {
+        0
+    };
+
+    early_dbg("map region [");
     early_dbg(region.name());
+    for _ in 0..name_right {
+        early_dbg(" ");
+    }
     early_dbg("] [");
     early_dbg_hex(vaddr as _);
     early_dbg(", ");

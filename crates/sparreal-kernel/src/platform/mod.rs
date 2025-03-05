@@ -13,9 +13,12 @@ use fdt::Fdt;
 
 pub mod fdt;
 
+#[derive(Clone)]
 pub enum PlatformInfoKind {
     DeviceTree(Fdt),
 }
+
+unsafe impl Send for PlatformInfoKind {}
 
 impl PlatformInfoKind {
     pub fn new_fdt(addr: NonNull<u8>) -> Self {
@@ -101,15 +104,21 @@ pub fn platform_name() -> String {
     }
 }
 
-pub fn memory_main_available() -> Result<Range<crate::mem::addr2::PhysAddr>, &'static str> {
+pub fn memory_main_available(
+    platform_info: &PlatformInfoKind,
+) -> Result<Range<crate::mem::addr2::PhysAddr>, &'static str> {
     let text = MMUImpl::rsv_regions()
         .into_iter()
         .find(|o| o.name().eq(".text"))
         .ok_or("can not find .text")?;
     let text_end = text.range.end;
 
-    let main_memory = phys_memorys()
-        .into_iter()
+    let main_memory = platform_info
+        .memorys()
+        .map(|r| {
+            crate::mem::addr2::PhysAddr::new(r.start.as_usize())
+                ..crate::mem::addr2::PhysAddr::new(r.end.as_usize())
+        })
         .find(|m| m.contains(&text_end))
         .ok_or("can not find main memory")?;
 

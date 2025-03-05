@@ -13,7 +13,7 @@ use percpu::PerCPU;
 pub use crate::platform::PlatformInfoKind;
 use crate::{
     mem::PhysAddr,
-    platform::{self, cpu_list, CPUHardId, CPUId},
+    platform::{self, CPUHardId, CPUId, cpu_list},
 };
 
 mod once;
@@ -74,7 +74,7 @@ unsafe fn get_mut() -> &'static mut GlobalVal {
 /// # Safty
 /// 只能在其他CPU启动前调用
 pub(crate) unsafe fn setup(platform_info: PlatformInfoKind) -> Result<(), &'static str> {
-    let main_memory = platform::memory_main_available()?;
+    let main_memory = platform::memory_main_available(&platform_info)?;
 
     let g = GlobalVal {
         platform_info,
@@ -85,12 +85,6 @@ pub(crate) unsafe fn setup(platform_info: PlatformInfoKind) -> Result<(), &'stat
     unsafe {
         GLOBAL.g.get().write(Some(g));
         GLOBAL.g_ok.store(true, Ordering::SeqCst);
-
-        // match &mut get_mut().platform_info {
-        //     PlatformInfoKind::DeviceTree(fdt) => {
-        //         fdt.setup()?;
-        //     }
-        // }
     }
     Ok(())
 }
@@ -107,6 +101,10 @@ pub(crate) unsafe fn setup_percpu() {
     GLOBAL.cpu_ok.store(true, Ordering::SeqCst);
 
     debug!("per cpu data ok");
+}
+
+pub(crate) fn cpu_inited() -> bool {
+    GLOBAL.cpu_ok.load(Ordering::SeqCst)
 }
 
 pub(crate) fn cpu_global() -> &'static PerCPU {
