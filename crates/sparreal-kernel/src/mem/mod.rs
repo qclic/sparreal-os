@@ -6,16 +6,15 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use addr2::PhysRange;
 use buddy_system_allocator::Heap;
 use log::debug;
+use mmu::RegionKind;
 use page_table_generic::{AccessSetting, CacheSetting};
 use spin::Mutex;
 
 use crate::{globals::global_val, platform::kstack_size, println};
 
 mod addr;
-pub mod addr2;
 mod cache;
 #[cfg(feature = "mmu")]
 pub mod mmu;
@@ -67,64 +66,21 @@ unsafe impl GlobalAlloc for KAllocator {
     }
 }
 
-static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
 const STACK_BOTTOM: usize = 0xffff_e100_0000_0000;
 
 pub fn stack_top() -> usize {
     STACK_BOTTOM + kstack_size()
 }
 
-#[cfg(feature = "mmu")]
-pub const IO_OFFSET: usize = 0xffff_f000_0000_0000;
-#[cfg(not(feature = "mmu"))]
-pub const IO_OFFSET: usize = 0;
-
-static mut VA_OFFSET: usize = 0;
-static mut VA_OFFSET_NOW: usize = 0;
-
-pub fn set_text_va_offset(offset: usize) {
-    TEXT_OFFSET.store(offset, Ordering::SeqCst);
-}
-
-pub(crate) fn set_va_offset(offset: usize) {
-    unsafe { VA_OFFSET = offset };
-}
-
-pub fn va_offset() -> usize {
-    unsafe { VA_OFFSET }
-}
-
-pub(crate) unsafe fn set_va_offset_now(va: usize) {
-    unsafe { VA_OFFSET_NOW = va };
-}
-
-fn va_offset_now() -> usize {
-    unsafe { VA_OFFSET_NOW }
-}
-
 pub(crate) fn init_heap() {
     let main = global_val().main_memory.clone();
-    // let mut start = VirtAddr::from(main.start);
-    // let mut end = VirtAddr::from(main.end);
+    let mut start = VirtAddr::from(main.start.raw() + RegionKind::Other.va_offset());
+    let mut end = VirtAddr::from(main.end.raw() + RegionKind::Other.va_offset());
 
-    // let bss_end = crate::mem::region::bss().as_ptr_range().end.into();
+    println!("heap add memory [{}, {})", start, end);
+    ALLOCATOR.add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.into(), end - start) });
 
-    // if (start..end).contains(&bss_end) {
-    //     start = bss_end;
-    // }
-
-    // let stack_top = VirtAddr::from(global_val().kstack_top);
-    // let stack_bottom = stack_top - kstack_size();
-
-    // if (start..end).contains(&stack_bottom) {
-    //     end = stack_bottom;
-    // }
-
-    // println!("heap add memory [{}, {})", start, end);
-    // ALLOCATOR
-    //     .add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.as_mut_ptr(), end - start) });
-
-    // println!("heap initialized");
+    println!("heap initialized");
 }
 
 pub(crate) fn init_page_and_memory() {

@@ -1,12 +1,16 @@
-use core::{alloc::Layout, ffi::CStr, ops::Range, ptr::NonNull, sync::atomic::Ordering};
+use core::{
+    alloc::Layout,
+    ffi::CStr,
+    ops::Range,
+    ptr::NonNull,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
+use super::{Phys, PhysAddr, PhysCRange, STACK_BOTTOM, Virt};
+pub use arrayvec::ArrayVec;
 use buddy_system_allocator::Heap;
 use page_table_generic::err::PagingError;
 pub use page_table_generic::*;
-
-mod paging;
-
-pub use paging::iomap;
 
 use crate::{
     globals::{cpu_inited, global_val},
@@ -17,12 +21,17 @@ use crate::{
     platform_if::{MMUImpl, PlatformImpl},
 };
 
+mod paging;
+
 pub use paging::init_table;
+pub use paging::iomap;
 
-pub use super::addr2::PhysRange;
-use super::{Align, IO_OFFSET, STACK_BOTTOM, TEXT_OFFSET, addr2::PhysAddr, va_offset};
+pub const LINER_OFFSET: usize = 0xffff_f000_0000_0000;
+static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
 
-pub use arrayvec::ArrayVec;
+pub fn set_text_va_offset(offset: usize) {
+    TEXT_OFFSET.store(offset, Ordering::SeqCst);
+}
 
 struct PageHeap(Heap<32>);
 
@@ -43,23 +52,23 @@ impl page_table_generic::Access for PageHeap {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct RsvRegion {
-    pub range: PhysRange,
+    pub range: PhysCRange,
     pub name: *const u8,
     pub access: AccessSetting,
     pub cache: CacheSetting,
-    pub kind: RsvRegionKind,
+    pub kind: RegionKind,
 }
 
 impl RsvRegion {
     pub fn new(
-        range: PhysRange,
+        range: Range<PhysAddr>,
         name: &'static CStr,
         access: AccessSetting,
         cache: CacheSetting,
-        kind: RsvRegionKind,
+        kind: RegionKind,
     ) -> Self {
         Self {
-            range,
+            range: range.into(),
             name: name.as_ptr(),
             access,
             cache,
@@ -73,9 +82,9 @@ impl RsvRegion {
         name: &'static CStr,
         access: AccessSetting,
         cache: CacheSetting,
-        kind: RsvRegionKind,
+        kind: RegionKind,
     ) -> Self {
-        Self::new((start..start + len).into(), name, access, cache, kind)
+        Self::new(start..start + len, name, access, cache, kind)
     }
 
     pub fn name(&self) -> &'static str {
@@ -84,32 +93,43 @@ impl RsvRegion {
 
     pub fn va_offset(&self) -> usize {
         match self.kind {
-            RsvRegionKind::Image => TEXT_OFFSET.load(Ordering::Relaxed),
-            RsvRegionKind::Stack => {
+            RegionKind::Stack => {
                 if cpu_inited() {
                     todo!()
                 } else {
                     STACK_BOTTOM - self.range.start.raw()
                 }
             }
-            RsvRegionKind::Other => IO_OFFSET,
+            _ => self.kind.va_offset(),
         }
     }
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy)]
-pub enum RsvRegionKind {
-    Image,
+#[derive(Debug, Clone, Copy)]
+pub enum RegionKind {
+    KImage,
     Stack,
     Other,
 }
 
-pub struct BootMemoryRegion {
-    pub name: &'static str,
-    pub range: Range<usize>,
-    pub access: AccessSetting,
-    pub cache: CacheSetting,
+impl RegionKind {
+    pub fn va_offset(&self) -> usize {
+        match self {
+            RegionKind::KImage => TEXT_OFFSET.load(Ordering::Relaxed),
+            RegionKind::Stack => {
+                todo!()
+            }
+            RegionKind::Other => LINER_OFFSET,
+        }
+    }
+}
+
+impl<T> From<Virt<T>> for Phys<T> {
+    fn from(value: Virt<T>) -> Self {
+        let v = value.raw();
+        todo!()
+    }
 }
 
 pub fn new_boot_table() -> Result<usize, &'static str> {
@@ -117,7 +137,7 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
 
     let stack_region = MMUImpl::rsv_regions()
         .into_iter()
-        .find(|&a| matches!(a.kind, RsvRegionKind::Stack))
+        .find(|&a| matches!(a.kind, RegionKind::Stack))
         .unwrap();
 
     // 临时用栈底储存页表项
@@ -138,21 +158,21 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
 
     for memory in platform::phys_memorys() {
         let region = RsvRegion::new(
-            memory.into(),
+            memory,
             c"memory",
             AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
             CacheSetting::Normal,
-            RsvRegionKind::Other,
+            RegionKind::Other,
         );
         map_region(&mut table, 0, &region, &mut access);
     }
 
     let main_memory = RsvRegion::new(
-        global_val().main_memory.clone().into(),
+        global_val().main_memory.clone(),
         c"main memory",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
         CacheSetting::Normal,
-        RsvRegionKind::Other,
+        RegionKind::Other,
     );
 
     map_region(

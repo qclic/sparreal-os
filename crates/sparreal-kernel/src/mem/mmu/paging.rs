@@ -6,7 +6,7 @@ use spin::MutexGuard;
 
 use crate::{
     globals::global_val,
-    mem::{ALLOCATOR, Align, PhysAddr, VirtAddr},
+    mem::{ALLOCATOR, PhysAddr, VirtAddr},
 };
 
 use super::*;
@@ -45,7 +45,7 @@ struct HeapGuard<'a>(MutexGuard<'a, Heap<32>>);
 
 impl Access for HeapGuard<'_> {
     fn va_offset(&self) -> usize {
-        va_offset()
+        RegionKind::Other.va_offset()
     }
 
     unsafe fn alloc(&mut self, layout: Layout) -> Option<NonNull<u8>> {
@@ -69,7 +69,7 @@ pub fn init_table() {
 
         for memory in info.memorys() {
             let size = memory.end - memory.start;
-            let vaddr = VirtAddr::from(memory.start);
+            let vaddr = VirtAddr::from(memory.start.raw() + RegionKind::Other.va_offset());
 
             trace!(
                 "Mapping memory [{}, {}) -> [{}, {})",
@@ -97,7 +97,7 @@ pub fn init_table() {
         if let Some(con) = debugcon {
             let reg = con.addr.align_down(0x1000);
 
-            let vaddr = VirtAddr::from(reg);
+            let vaddr = VirtAddr::from(reg.raw() + RegionKind::Other.va_offset());
             trace!("Mapping stdout {} -> {}", vaddr, reg);
 
             let _ = table.map_region(
@@ -123,7 +123,7 @@ pub fn iomap(paddr: PhysAddr, size: usize) -> NonNull<u8> {
     unsafe {
         let mut table = get_kernel_table();
         let paddr = paddr.align_down(0x1000);
-        let vaddr = VirtAddr::from(paddr);
+        let vaddr = VirtAddr::from(paddr.raw() + RegionKind::Other.va_offset());
         let size = size.max(0x1000);
 
         let mut heap = HeapGuard(ALLOCATOR.inner.lock());
@@ -131,7 +131,7 @@ pub fn iomap(paddr: PhysAddr, size: usize) -> NonNull<u8> {
         let _ = table.map_region_with_handle(
             MapConfig::new(
                 vaddr.into(),
-                paddr.as_usize(),
+                paddr.into(),
                 AccessSetting::Read | AccessSetting::Write,
                 CacheSetting::Device,
             ),
@@ -143,6 +143,6 @@ pub fn iomap(paddr: PhysAddr, size: usize) -> NonNull<u8> {
             }),
         );
 
-        NonNull::new(vaddr.as_mut_ptr()).unwrap()
+        NonNull::new(vaddr.into()).unwrap()
     }
 }

@@ -2,11 +2,7 @@ use core::arch::asm;
 
 use aarch64_cpu::{asm::barrier::*, registers::*};
 use page_table_arm::*;
-use sparreal_kernel::{
-    io::print::*,
-    mem::{IO_OFFSET, addr2::PhysAddr},
-    platform_if::*,
-};
+use sparreal_kernel::{io::print::*, mem::PhysAddr, platform_if::*};
 
 use super::cache;
 
@@ -23,7 +19,7 @@ impl MMU for PageTableImpl {
             c"debug_uart",
             AccessSetting::Read | AccessSetting::Write,
             CacheSetting::Device,
-            RsvRegionKind::Other,
+            RegionKind::Other,
         ));
 
         ret
@@ -202,7 +198,7 @@ impl MMU for PageTableImpl {
         early_dbg("TCR_EL1: ");
         early_dbg_hexln(TCR_EL1.get());
         unsafe {
-            super::debug::mmu_add_offset(IO_OFFSET);
+            super::debug::mmu_add_offset(RegionKind::Other.va_offset());
 
             asm!("tlbi vmalle1");
             isb(SY);

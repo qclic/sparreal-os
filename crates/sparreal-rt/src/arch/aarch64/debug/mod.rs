@@ -7,7 +7,7 @@ use core::{
 use aux_mini::AuxMini;
 use fdt_parser::Fdt;
 use pl011::Pl011;
-use sparreal_kernel::mem::addr2::*;
+use sparreal_kernel::mem::*;
 
 mod aux_mini;
 mod pl011;

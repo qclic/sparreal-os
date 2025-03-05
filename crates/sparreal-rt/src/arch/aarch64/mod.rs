@@ -7,10 +7,10 @@ use crate::consts;
 
 mod boot;
 mod cache;
+mod context;
 mod debug;
 mod paging;
 mod trap;
-mod context;
 
 pub fn is_mmu_enabled() -> bool {
     SCTLR_EL2.matches_any(&[SCTLR_EL2::M::Enable])
@@ -86,7 +86,9 @@ impl Platform for PlatformImpl {
 
     fn shutdown() -> ! {
         // psci::system_off()
-        todo!()
+        loop {
+            aarch64_cpu::asm::wfi();
+        }
     }
 
     fn debug_put(b: u8) {

@@ -1,15 +1,12 @@
-use alloc::string::String;
-use alloc::vec::Vec;
-use core::ffi::CStr;
-use core::fmt::Display;
-use core::ops::Range;
-use core::ptr::NonNull;
+use alloc::{string::String, vec::Vec};
+use core::{ffi::CStr, fmt::Display, ops::Range, ptr::NonNull};
+
+use fdt::Fdt;
 use rdrive::register::DriverRegister;
 
 use crate::globals::global_val;
-use crate::mem::{Align, PhysAddr};
+use crate::mem::PhysAddr;
 use crate::platform_if::*;
-use fdt::Fdt;
 
 pub mod fdt;
 
@@ -63,24 +60,6 @@ impl PlatformInfoKind {
         })
     }
 
-    pub fn main_memory(&self) -> Option<Range<PhysAddr>> {
-        let kernel_text = PlatformImpl::kernel_regions().text;
-
-        let mut first = None;
-
-        for m in self.memorys() {
-            let r = m.start.as_usize()..m.end.as_usize();
-            if r.contains(&kernel_text.end) {
-                return Some(m);
-            }
-            if first.is_none() {
-                first = Some(m);
-            }
-        }
-
-        first
-    }
-
     pub fn debugcon(&self) -> Option<SerialPort> {
         match self {
             Self::DeviceTree(fdt) => fdt.debugcon(),
@@ -106,7 +85,7 @@ pub fn platform_name() -> String {
 
 pub fn memory_main_available(
     platform_info: &PlatformInfoKind,
-) -> Result<Range<crate::mem::addr2::PhysAddr>, &'static str> {
+) -> Result<Range<PhysAddr>, &'static str> {
     let text = MMUImpl::rsv_regions()
         .into_iter()
         .find(|o| o.name().eq(".text"))
@@ -115,14 +94,10 @@ pub fn memory_main_available(
 
     let main_memory = platform_info
         .memorys()
-        .map(|r| {
-            crate::mem::addr2::PhysAddr::new(r.start.as_usize())
-                ..crate::mem::addr2::PhysAddr::new(r.end.as_usize())
-        })
         .find(|m| m.contains(&text_end))
         .ok_or("can not find main memory")?;
 
-    let mut start = crate::mem::addr2::PhysAddr::new(0);
+    let mut start = PhysAddr::new(0);
     for rsv in MMUImpl::rsv_regions() {
         if main_memory.contains(&rsv.range.end) && rsv.range.end > start {
             start = rsv.range.end;
@@ -132,7 +107,7 @@ pub fn memory_main_available(
     Ok(start..main_memory.end)
 }
 
-pub fn phys_memorys() -> ArrayVec<Range<crate::mem::addr2::PhysAddr>, 12> {
+pub fn phys_memorys() -> ArrayVec<Range<PhysAddr>, 12> {
     match &global_val().platform_info {
         PlatformInfoKind::DeviceTree(fdt) => fdt.memorys(),
     }

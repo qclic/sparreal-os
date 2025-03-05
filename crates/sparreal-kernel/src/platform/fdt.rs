@@ -1,17 +1,12 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use arrayvec::ArrayVec;
-use core::{
-    ops::Range,
-    ptr::{NonNull, slice_from_raw_parts, slice_from_raw_parts_mut},
-};
+use core::{ops::Range, ptr::NonNull};
 use fdt_parser::{Node, Pci};
 use rdrive::{Phandle, probe::ProbeData};
 
-use crate::globals::{self, global_val};
 use crate::irq::IrqInfo;
-use crate::mem::{Align, VirtAddr};
-use crate::{io::print::*, mem::PhysAddr};
+use crate::mem::PhysAddr;
 
 use super::{CPUInfo, SerialPort};
 
@@ -45,22 +40,15 @@ impl Fdt {
             .collect()
     }
 
-    // pub fn setup(&mut self) -> Result<(), &'static str> {
-    //     let main_memory = global_val().main_memory.clone();
-    //     let fdt_start = self.move_to(main_memory.end.as_usize());
-    //     unsafe { globals::edit(|g| g.kstack_top = fdt_start.into()) };
-    //     Ok(())
-    // }
-
     pub fn get(&self) -> fdt_parser::Fdt<'static> {
         fdt_parser::Fdt::from_ptr(self.0).unwrap()
     }
 
     pub fn get_addr(&self) -> NonNull<u8> {
-        unsafe { NonNull::new_unchecked(VirtAddr::from(self.0).as_mut_ptr()) }
+        self.0
     }
 
-    pub fn memorys(&self) -> ArrayVec<Range<crate::mem::addr2::PhysAddr>, 12> {
+    pub fn memorys(&self) -> ArrayVec<Range<PhysAddr>, 12> {
         let mut out = ArrayVec::new();
 
         let fdt = self.get();
@@ -70,7 +58,7 @@ impl Fdt {
                 let addr = (region.address as usize).into();
                 out.push(addr..addr + region.size);
             }
-        } 
+        }
         out
     }
 

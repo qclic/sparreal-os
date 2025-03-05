@@ -3,7 +3,6 @@ use core::ops::Range;
 use core::ptr::{NonNull, slice_from_raw_parts, slice_from_raw_parts_mut};
 use core::sync::atomic::{AtomicUsize, Ordering};
 use memory_addr::MemoryAddr;
-use sparreal_kernel::mem::addr2::PhysAddr;
 use sparreal_kernel::mem::mmu::*;
 pub use sparreal_kernel::mem::*;
 use sparreal_kernel::platform_if::RsvRegion;
@@ -69,12 +68,9 @@ pub fn clean_bss() {
     bss.fill(0);
 }
 
-fn slice_to_phys_range(data: &[u8]) -> PhysRange {
+fn slice_to_phys_range(data: &[u8]) -> Range<PhysAddr> {
     let ptr_range = data.as_ptr_range();
-    PhysRange {
-        start: (ptr_range.start as usize).into(),
-        end: (ptr_range.end as usize).into(),
-    }
+    (ptr_range.start as usize).into()..(ptr_range.end as usize).into()
 }
 
 fn fdt_addr_range() -> Option<Range<PhysAddr>> {
@@ -94,7 +90,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         c".text",
         AccessSetting::Read | AccessSetting::Execute,
         CacheSetting::Normal,
-        RsvRegionKind::Image,
+        RegionKind::KImage,
     ));
 
     rsv_regions.push(RsvRegion::new(
@@ -102,7 +98,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         c".rodata",
         AccessSetting::Read | AccessSetting::Execute,
         CacheSetting::Normal,
-        RsvRegionKind::Image,
+        RegionKind::KImage,
     ));
 
     rsv_regions.push(RsvRegion::new(
@@ -110,7 +106,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         c".data",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
         CacheSetting::Normal,
-        RsvRegionKind::Image,
+        RegionKind::KImage,
     ));
 
     rsv_regions.push(RsvRegion::new(
@@ -118,7 +114,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         c".bss",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
         CacheSetting::Normal,
-        RsvRegionKind::Image,
+        RegionKind::KImage,
     ));
 
     rsv_regions.push(RsvRegion::new(
@@ -126,16 +122,16 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         c".stack",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
         CacheSetting::Normal,
-        RsvRegionKind::Stack,
+        RegionKind::Stack,
     ));
 
     if let Some(fdt) = fdt_addr_range() {
         rsv_regions.push(RsvRegion::new(
-            fdt.into(),
+            fdt,
             c"fdt",
             AccessSetting::Read,
             CacheSetting::Normal,
-            RsvRegionKind::Other,
+            RegionKind::Other,
         ));
     }
 

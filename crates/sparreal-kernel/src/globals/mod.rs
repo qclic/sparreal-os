@@ -21,7 +21,7 @@ mod percpu;
 
 pub struct GlobalVal {
     pub platform_info: PlatformInfoKind,
-    pub main_memory: Range<crate::mem::addr2::PhysAddr>,
+    pub main_memory: Range<PhysAddr>,
     percpu: BTreeMap<CPUHardId, percpu::PerCPU>,
 }
 
@@ -71,12 +71,13 @@ unsafe fn get_mut() -> &'static mut GlobalVal {
     unsafe { (*GLOBAL.g.get()).as_mut().unwrap() }
 }
 
+#[cfg(feature = "mmu")]
 pub(crate) unsafe fn mmu_relocate() {
     unsafe {
         edit(|g| match &g.platform_info {
             PlatformInfoKind::DeviceTree(fdt) => {
                 let addr = fdt.get_addr();
-                let vaddr = addr.add(mem::IO_OFFSET);
+                let vaddr = addr.add(mem::mmu::LINER_OFFSET);
                 g.platform_info = PlatformInfoKind::DeviceTree(Fdt::new(vaddr))
             }
         });
