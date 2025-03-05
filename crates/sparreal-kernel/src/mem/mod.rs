@@ -103,7 +103,7 @@ fn va_offset_now() -> usize {
 }
 
 pub(crate) fn init_heap() {
-    // let main = global_val().main_memory.clone();
+    let main = global_val().main_memory.clone();
     // let mut start = VirtAddr::from(main.start);
     // let mut end = VirtAddr::from(main.end);
 

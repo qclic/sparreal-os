@@ -26,15 +26,15 @@ pub use mmu::start;
 #[repr(align(0x10))]
 pub extern "C" fn __start() -> ! {
     early_dbgln("Relocate success.");
-
+    
     io::print::stdout_use_debug();
+
+    let _ = log::set_logger(&KLogger);
+    log::set_max_level(LevelFilter::Trace);
 
     mem::init_heap();
 
     print_start_msg();
-
-    let _ = log::set_logger(&KLogger);
-    log::set_max_level(LevelFilter::Trace);
 
     PlatformImpl::on_boot_success();
 

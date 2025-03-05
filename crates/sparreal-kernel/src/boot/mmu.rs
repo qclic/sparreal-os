@@ -35,5 +35,7 @@ pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(
     fence(Ordering::SeqCst);
 
     early_dbgln("begin enable mmu");
+    unsafe { globals::mmu_relocate() };
+
     MMUImpl::enable_mmu(stack_top, jump_to)
 }

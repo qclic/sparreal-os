@@ -12,8 +12,8 @@ use percpu::PerCPU;
 
 pub use crate::platform::PlatformInfoKind;
 use crate::{
-    mem::PhysAddr,
-    platform::{self, CPUHardId, CPUId, cpu_list},
+    mem::{self, PhysAddr},
+    platform::{self, CPUHardId, CPUId, cpu_list, fdt::Fdt},
 };
 
 mod once;
@@ -69,6 +69,18 @@ pub(crate) unsafe fn edit(f: impl FnOnce(&mut GlobalVal)) {
 
 unsafe fn get_mut() -> &'static mut GlobalVal {
     unsafe { (*GLOBAL.g.get()).as_mut().unwrap() }
+}
+
+pub(crate) unsafe fn mmu_relocate() {
+    unsafe {
+        edit(|g| match &g.platform_info {
+            PlatformInfoKind::DeviceTree(fdt) => {
+                let addr = fdt.get_addr();
+                let vaddr = addr.add(mem::IO_OFFSET);
+                g.platform_info = PlatformInfoKind::DeviceTree(Fdt::new(vaddr))
+            }
+        });
+    }
 }
 
 /// # Safty

@@ -8,6 +8,8 @@ use sparreal_kernel::{
     platform_if::*,
 };
 
+use super::cache;
+
 pub struct PageTableImpl;
 
 #[api_impl]
@@ -195,10 +197,12 @@ impl MMU for PageTableImpl {
             + TCR_EL1::T1SZ.val(16);
         TCR_EL1.write(TCR_EL1::IPS::Bits_48 + tcr_flags0 + tcr_flags1);
 
+        cache::dcache_all(CacheOp::CleanAndInvalidate);
+
         early_dbg("TCR_EL1: ");
         early_dbg_hexln(TCR_EL1.get());
         unsafe {
-            // super::debug::mmu_add_offset(IO_OFFSET);
+            super::debug::mmu_add_offset(IO_OFFSET);
 
             asm!("tlbi vmalle1");
             isb(SY);
