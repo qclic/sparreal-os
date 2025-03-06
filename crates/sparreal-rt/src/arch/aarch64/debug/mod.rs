@@ -7,7 +7,10 @@ use core::{
 use aux_mini::AuxMini;
 use fdt_parser::Fdt;
 use pl011::Pl011;
-use sparreal_kernel::mem::*;
+use sparreal_kernel::{
+    io::print::{early_dbg, early_dbg_hexln, early_dbgln},
+    mem::*,
+};
 
 mod aux_mini;
 mod pl011;
@@ -33,6 +36,10 @@ impl UartWapper {
 }
 
 pub unsafe fn mmu_add_offset(va_offset: usize) {
+    let dst = REG_BASE.load(Ordering::Relaxed) + va_offset;
+    early_dbg("uart set to ");
+    early_dbg_hexln(dst as _);
+
     REG_BASE.fetch_add(va_offset, Ordering::SeqCst);
 }
 

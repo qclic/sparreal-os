@@ -26,7 +26,7 @@ mod paging;
 pub use paging::init_table;
 pub use paging::iomap;
 
-pub const LINER_OFFSET: usize = 0xffff_f000_0000_0000;
+pub const LINER_OFFSET: usize = 0xffff_ff00_0000_0000;
 static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
 
 pub fn set_text_va_offset(offset: usize) {
@@ -135,19 +135,12 @@ impl<T> From<Virt<T>> for Phys<T> {
 pub fn new_boot_table() -> Result<usize, &'static str> {
     let mut access = PageHeap(Heap::empty());
 
-    let stack_region = MMUImpl::rsv_regions()
-        .into_iter()
-        .find(|&a| matches!(a.kind, RegionKind::Stack))
-        .unwrap();
+    let tmp_end = global_val().main_memory.end;
+    let tmp_size = tmp_end - global_val().main_memory.start;
+    let tmp_pt = (global_val().main_memory.start + tmp_size / 2).raw();
 
-    // 临时用栈底储存页表项
-    let tmp_pt = stack_region.range.start.raw();
-    let tmp_size = 0x1000 * 200;
-
-    early_dbg("tmp table alloc: @");
-    early_dbg_hexln(tmp_pt as _);
-
-    unsafe { access.0.init(tmp_pt, tmp_size) };
+    early_dbg_range("page table allocator", tmp_pt..tmp_end.raw());
+    unsafe { access.0.add_to_heap(tmp_pt, tmp_end.raw()) };
 
     let mut table =
         PageTableRef::create_empty(&mut access).map_err(|_| "page table allocator no memory")?;

@@ -1,7 +1,7 @@
 use core::arch::asm;
 
 use aarch64_cpu::registers::*;
-use sparreal_kernel::{mem::KernelRegions, platform_if::*};
+use sparreal_kernel::platform_if::*;
 
 use crate::consts;
 

@@ -26,16 +26,16 @@ pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(
     let stack_top = stack_top();
     let jump_to = __start as usize + text_va_offset;
 
+    early_dbgln("begin enable mmu");
+
     early_dbg("Jump to __start: ");
     early_dbg_hex(jump_to as _);
     early_dbg(", stack top: ");
     early_dbg_hexln(stack_top as _);
-
+    
     flush_tlb_all();
+
     fence(Ordering::SeqCst);
-
-    early_dbgln("begin enable mmu");
     unsafe { globals::mmu_relocate() };
-
     MMUImpl::enable_mmu(stack_top, jump_to)
 }
