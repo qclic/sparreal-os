@@ -131,23 +131,19 @@ impl<T> From<Virt<T>> for Phys<T> {
         todo!()
     }
 }
-
+const MB: usize = 1024 * 1024;
 pub fn new_boot_table() -> Result<usize, &'static str> {
     let mut access = PageHeap(Heap::empty());
 
     let tmp_end = global_val().main_memory.end;
-    let tmp_size = tmp_end - global_val().main_memory.start;
-    let tmp_pt = (global_val().main_memory.start + tmp_size / 2).raw();
+    let tmp_size = tmp_end - global_val().main_memory.start.align_up(MB);
+    let tmp_pt = (global_val().main_memory.end - tmp_size / 2).raw();
 
     early_dbg_range("page table allocator", tmp_pt..tmp_end.raw());
     unsafe { access.0.add_to_heap(tmp_pt, tmp_end.raw()) };
 
     let mut table =
         PageTableRef::create_empty(&mut access).map_err(|_| "page table allocator no memory")?;
-
-    for region in MMUImpl::rsv_regions() {
-        map_region(&mut table, region.va_offset(), &region, &mut access);
-    }
 
     for memory in platform::phys_memorys() {
         let region = RsvRegion::new(
@@ -158,6 +154,10 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
             RegionKind::Other,
         );
         map_region(&mut table, 0, &region, &mut access);
+    }
+
+    for region in MMUImpl::rsv_regions() {
+        map_region(&mut table, region.va_offset(), &region, &mut access);
     }
 
     let main_memory = RsvRegion::new(
@@ -226,7 +226,7 @@ fn map_region(
             true,
             access,
         ) {
-            early_handle_err(e);
+            // early_handle_err(e);
         }
     }
 }

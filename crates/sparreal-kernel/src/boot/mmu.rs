@@ -5,7 +5,7 @@ use crate::{
     globals::{self, global_val},
     io::print::*,
     mem::{mmu::*, stack_top},
-    platform::PlatformInfoKind,
+    platform::{regsions, PlatformInfoKind},
     platform_if::MMUImpl,
 };
 
@@ -24,6 +24,8 @@ pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(
     set_kernel_table(table);
 
     let stack_top = stack_top();
+    // let stack_top = MMUImpl::rsv_regions().into_iter().find(|a| matches!( a.kind, RegionKind::Stack)).unwrap().range.end.raw();
+
     let jump_to = __start as usize + text_va_offset;
 
     early_dbgln("begin enable mmu");
@@ -32,7 +34,7 @@ pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(
     early_dbg_hex(jump_to as _);
     early_dbg(", stack top: ");
     early_dbg_hexln(stack_top as _);
-    
+
     flush_tlb_all();
 
     fence(Ordering::SeqCst);

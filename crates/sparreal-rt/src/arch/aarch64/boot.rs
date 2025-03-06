@@ -74,11 +74,20 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
     clean_bss();
     enable_fp();
     debug::init_by_fdt(fdt);
-    unsafe extern "C" {
-        fn vector_table_el1();
+    unsafe {
+        asm!(
+            "
+        LDR      x0, =vector_table_el1
+        MSR      VBAR_EL1, x0
+        "
+        );
     }
-
-    VBAR_EL1.set(vector_table_el1 as usize as _);
+    match CurrentEL.read(CurrentEL::EL) {
+        1 => early_dbgln("EL1"),
+        2 => early_dbgln("EL2"),
+        3 => early_dbgln("EL3"),
+        _ => panic!("unknown EL"),
+    }
 
     unsafe {
         let fdt = mem::save_fdt(fdt);

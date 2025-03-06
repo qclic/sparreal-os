@@ -200,9 +200,7 @@ impl MMU for PageTableImpl {
         unsafe {
             super::debug::mmu_add_offset(RegionKind::Other.va_offset());
 
-            asm!("tlbi vmalle1");
-            isb(SY);
-            dsb(NSH);
+            MMUImpl::flush_tlb_all();
             // Enable the MMU and turn on I-cache and D-cache
             SCTLR_EL1
                 .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);

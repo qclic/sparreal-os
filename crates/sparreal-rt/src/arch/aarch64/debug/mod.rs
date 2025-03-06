@@ -36,15 +36,14 @@ impl UartWapper {
 }
 
 pub unsafe fn mmu_add_offset(va_offset: usize) {
-    let dst = REG_BASE.load(Ordering::Relaxed) + va_offset;
+    let new_reg = reg() + va_offset;
     early_dbg("uart set to ");
-    early_dbg_hexln(dst as _);
-
-    REG_BASE.fetch_add(va_offset, Ordering::SeqCst);
+    early_dbg_hexln(new_reg as _);
+    REG_BASE.store(new_reg, Ordering::Release);
 }
 
 pub fn reg() -> usize {
-    REG_BASE.load(Ordering::SeqCst)
+    REG_BASE.load(Ordering::Relaxed)
 }
 
 pub fn put(byte: u8) {
