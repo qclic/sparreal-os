@@ -28,14 +28,14 @@ pub use paging::iomap;
 
 pub const LINER_OFFSET: usize = 0xffff_f000_0000_0000;
 static TEXT_OFFSET: OnceStatic<usize> = OnceStatic::new(0);
-static IS_MMU_ENABLED: AtomicBool = AtomicBool::new(false);
+static IS_MMU_ENABLED: OnceStatic<bool> = OnceStatic::new(false);
 
 pub fn set_mmu_enabled() {
-    IS_MMU_ENABLED.store(true, Ordering::SeqCst);
+    unsafe { IS_MMU_ENABLED.set(true) };
 }
 
 pub fn is_mmu_enabled() -> bool {
-    IS_MMU_ENABLED.load(Ordering::Relaxed)
+    *IS_MMU_ENABLED.get_ref()
 }
 
 /// 设置内核段偏移.
