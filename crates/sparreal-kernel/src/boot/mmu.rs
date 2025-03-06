@@ -4,14 +4,16 @@ use super::__start;
 use crate::{
     globals::{self, global_val},
     io::print::*,
-    mem::{mmu::*, stack_top},
-    platform::{regsions, PlatformInfoKind},
+    mem::{mmu::*, region::init_boot_rsv_region, stack_top},
+    platform::{PlatformInfoKind, regsions},
     platform_if::MMUImpl,
 };
 
 pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(), &'static str> {
     early_dbgln("Booting up");
     set_text_va_offset(text_va_offset);
+    unsafe { init_boot_rsv_region() };
+
     if let Err(e) = unsafe { globals::setup(platform_info) } {
         early_dbgln("setup globle error: ");
         early_dbgln(e);
@@ -38,6 +40,5 @@ pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(
     flush_tlb_all();
 
     fence(Ordering::SeqCst);
-    unsafe { globals::mmu_relocate() };
     MMUImpl::enable_mmu(stack_top, jump_to)
 }

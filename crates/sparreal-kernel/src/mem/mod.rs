@@ -18,8 +18,8 @@ mod addr;
 mod cache;
 #[cfg(feature = "mmu")]
 pub mod mmu;
+pub mod once;
 pub mod region;
-
 pub use addr::*;
 
 #[global_allocator]
@@ -89,19 +89,19 @@ pub(crate) fn init_page_and_memory() {
     #[cfg(feature = "mmu")]
     mmu::init_table();
 
-    // let main = global_val().main_memory.clone();
+    let main = global_val().main_memory.clone();
 
-    // for memory in global_val().platform_info.memorys() {
-    //     if memory.contains(&main.start) {
-    //         continue;
-    //     }
-    //     let start = VirtAddr::from(memory.start);
-    //     let end = VirtAddr::from(memory.end);
-    //     let len = memory.end - memory.start;
+    for memory in global_val().platform_info.memorys() {
+        if memory.contains(&main.start) {
+            continue;
+        }
+        // let start = VirtAddr::from(memory.start);
+        // let end = VirtAddr::from(memory.end);
+        // let len = memory.end - memory.start;
 
-    //     debug!("Heap add memory [{}, {})", start, end);
-    //     ALLOCATOR.add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.as_mut_ptr(), len) });
-    // }
+        // debug!("Heap add memory [{}, {})", start, end);
+        // ALLOCATOR.add_to_heap(unsafe { &mut *slice_from_raw_parts_mut(start.as_mut_ptr(), len) });
+    }
 }
 
 #[repr(C)]

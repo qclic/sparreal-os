@@ -3,20 +3,18 @@ use core::{
     ffi::CStr,
     ops::Range,
     ptr::NonNull,
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
-use super::{Phys, PhysAddr, PhysCRange, STACK_BOTTOM, Virt};
+use super::{Phys, PhysAddr, PhysCRange, STACK_BOTTOM, Virt, once::OnceStatic};
 pub use arrayvec::ArrayVec;
 use buddy_system_allocator::Heap;
 use page_table_generic::err::PagingError;
 pub use page_table_generic::*;
 
 use crate::{
-    globals::{cpu_inited, global_val},
-    io::print::{
-        early_dbg, early_dbg_fmt, early_dbg_hex, early_dbg_hexln, early_dbg_range, early_dbgln,
-    },
+    globals::{self, cpu_inited, global_val},
+    io::print::*,
     platform,
     platform_if::{MMUImpl, PlatformImpl},
 };
@@ -28,6 +26,15 @@ pub use paging::iomap;
 
 pub const LINER_OFFSET: usize = 0xffff_f000_0000_0000;
 static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
+static IS_MMU_ENABLED: AtomicBool = AtomicBool::new(false);
+
+pub fn set_mmu_enabled() {
+    IS_MMU_ENABLED.store(true, Ordering::SeqCst);
+}
+
+pub fn is_mmu_enabled() -> bool {
+    IS_MMU_ENABLED.load(Ordering::Relaxed)
+}
 
 pub fn set_text_va_offset(offset: usize) {
     TEXT_OFFSET.store(offset, Ordering::SeqCst);
@@ -95,7 +102,7 @@ impl RsvRegion {
         match self.kind {
             RegionKind::Stack => {
                 if cpu_inited() {
-                    todo!()
+                    self.kind.va_offset()
                 } else {
                     STACK_BOTTOM - self.range.start.raw()
                 }
@@ -117,9 +124,7 @@ impl RegionKind {
     pub fn va_offset(&self) -> usize {
         match self {
             RegionKind::KImage => TEXT_OFFSET.load(Ordering::Relaxed),
-            RegionKind::Stack => {
-                todo!()
-            }
+            RegionKind::Stack => STACK_BOTTOM - globals::cpu_global().stack.start.raw(),
             RegionKind::Other => LINER_OFFSET,
         }
     }

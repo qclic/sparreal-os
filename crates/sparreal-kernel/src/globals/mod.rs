@@ -70,19 +70,6 @@ unsafe fn get_mut() -> &'static mut GlobalVal {
     unsafe { (*GLOBAL.g.get()).as_mut().unwrap() }
 }
 
-#[cfg(feature = "mmu")]
-pub(crate) unsafe fn mmu_relocate() {
-    unsafe {
-        edit(|g| match &g.platform_info {
-            PlatformInfoKind::DeviceTree(fdt) => {
-                let addr = fdt.get_addr();
-                let vaddr = addr.add(mem::mmu::LINER_OFFSET);
-                g.platform_info = PlatformInfoKind::DeviceTree(Fdt::new(vaddr))
-            }
-        });
-    }
-}
-
 /// # Safty
 /// 只能在其他CPU启动前调用
 pub(crate) unsafe fn setup(platform_info: PlatformInfoKind) -> Result<(), &'static str> {
@@ -100,7 +87,3 @@ pub(crate) unsafe fn setup(platform_info: PlatformInfoKind) -> Result<(), &'stat
     }
     Ok(())
 }
-
-
-
-

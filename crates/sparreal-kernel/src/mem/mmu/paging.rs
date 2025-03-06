@@ -71,7 +71,8 @@ pub fn init_table() {
             let vaddr = VirtAddr::from(region.range.start.raw() + region.kind.va_offset());
 
             trace!(
-                "Mapping memory [{}, {}) -> [{}, {})",
+                "Map [{:>}] [{}, {}) -> [{}, {})",
+                region.name(),
                 vaddr,
                 vaddr + size,
                 region.range.start,

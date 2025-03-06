@@ -91,7 +91,7 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
         let fdt = mem::save_fdt(fdt);
 
         let platform_info: PlatformInfoKind = if let Some(addr) = fdt {
-            PlatformInfoKind::new_fdt(addr)
+            PlatformInfoKind::new_fdt((addr.as_ptr() as usize).into())
         } else {
             todo!()
         };

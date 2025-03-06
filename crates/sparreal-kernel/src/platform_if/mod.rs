@@ -3,7 +3,7 @@ pub use rdrive::register::DriverRegisterSlice;
 pub use sparreal_macros::api_impl;
 use sparreal_macros::api_trait;
 
-pub use crate::mem::KernelRegions;
+pub use crate::mem::region::BootRsvRegionVec;
 
 #[api_trait]
 pub trait Platform {
@@ -61,7 +61,7 @@ pub use crate::mem::mmu::*;
 #[cfg(feature = "mmu")]
 #[api_trait]
 pub trait MMU {
-    fn rsv_regions() -> ArrayVec<RsvRegion, 8>;
+    fn rsv_regions() -> BootRsvRegionVec;
     fn set_kernel_table(addr: usize);
     fn get_kernel_table() -> usize;
     fn set_user_table(addr: usize);

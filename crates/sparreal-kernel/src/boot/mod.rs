@@ -26,6 +26,7 @@ pub use mmu::start;
 #[repr(align(0x10))]
 pub extern "C" fn __start() -> ! {
     early_dbgln("Relocate success.");
+    set_mmu_enabled();
 
     io::print::stdout_use_debug();
 
@@ -64,15 +65,14 @@ fn print_start_msg() {
 
     print_pair!("Version", env!("CARGO_PKG_VERSION"));
     print_pair!("Platfrom", "{}", platform_name());
-    // print_pair!("Kernel Base", "{:p}", region::text().as_ptr());
-
-    // let size =
-    //     region::bss().as_ptr_range().end as usize - region::text().as_ptr_range().start as usize;
-
-    // print_pair!("Kernel Size", "{:#}", byte_unit::Byte::from_u64(size as _));
     print_pair!("Kernel Stack Top", "{}", VirtAddr::from(stack_top()));
-
     print_pair!("Start CPU", "{}", platform::cpu_hard_id());
+
+    match &global_val().platform_info {
+        globals::PlatformInfoKind::DeviceTree(fdt) => {
+            print_pair!("FDT", "{:p}", fdt.get_addr());
+        }
+    }
 
     if let Some(debug) = global_val().platform_info.debugcon() {
         if let Some(c) = debug.compatibles().next() {

@@ -1,11 +1,12 @@
 use alloc::{string::String, vec::Vec};
-use core::{ffi::CStr, fmt::Display, ops::Range, ptr::NonNull};
+use core::{ffi::CStr, fmt::Display, ops::Range};
 
 use fdt::Fdt;
 use rdrive::register::DriverRegister;
 
 use crate::globals::global_val;
 use crate::mem::PhysAddr;
+use crate::mem::region::boot_regions;
 use crate::platform_if::*;
 
 pub mod fdt;
@@ -18,7 +19,7 @@ pub enum PlatformInfoKind {
 unsafe impl Send for PlatformInfoKind {}
 
 impl PlatformInfoKind {
-    pub fn new_fdt(addr: NonNull<u8>) -> Self {
+    pub fn new_fdt(addr: PhysAddr) -> Self {
         PlatformInfoKind::DeviceTree(Fdt::new(addr))
     }
 
@@ -86,7 +87,7 @@ pub fn platform_name() -> String {
 pub fn memory_main_available(
     platform_info: &PlatformInfoKind,
 ) -> Result<Range<PhysAddr>, &'static str> {
-    let text = MMUImpl::rsv_regions()
+    let text = boot_regions()
         .into_iter()
         .find(|o| o.name().eq(".text"))
         .ok_or("can not find .text")?;
@@ -98,7 +99,7 @@ pub fn memory_main_available(
         .ok_or("can not find main memory")?;
 
     let mut start = PhysAddr::new(0);
-    for rsv in MMUImpl::rsv_regions() {
+    for rsv in boot_regions() {
         if main_memory.contains(&rsv.range.end) && rsv.range.end > start {
             start = rsv.range.end;
         }
@@ -108,7 +109,8 @@ pub fn memory_main_available(
 }
 
 pub fn regsions() -> Vec<RsvRegion> {
-    let mut ret = MMUImpl::rsv_regions().to_vec();
+    let mut ret = boot_regions().to_vec();
+
     let main_available = memory_main_available(&global_val().platform_info).unwrap();
     ret.push(RsvRegion::new(
         main_available.clone(),

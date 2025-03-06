@@ -7,14 +7,15 @@ use rdrive::{Phandle, probe::ProbeData};
 
 use crate::irq::IrqInfo;
 use crate::mem::PhysAddr;
+use crate::platform_if::{RegionKind, is_mmu_enabled};
 
 use super::{CPUInfo, SerialPort};
 
 #[derive(Clone)]
-pub struct Fdt(NonNull<u8>);
+pub struct Fdt(PhysAddr);
 
 impl Fdt {
-    pub fn new(addr: NonNull<u8>) -> Self {
+    pub fn new(addr: PhysAddr) -> Self {
         Self(addr)
     }
 
@@ -41,11 +42,16 @@ impl Fdt {
     }
 
     pub fn get(&self) -> fdt_parser::Fdt<'static> {
-        fdt_parser::Fdt::from_ptr(self.0).unwrap()
+        fdt_parser::Fdt::from_ptr(self.get_addr()).unwrap()
     }
 
     pub fn get_addr(&self) -> NonNull<u8> {
-        self.0
+        NonNull::new(if is_mmu_enabled() {
+            (self.0 + RegionKind::Other.va_offset()).raw() as _
+        } else {
+            self.0.raw() as _
+        })
+        .unwrap()
     }
 
     pub fn memorys(&self) -> ArrayVec<Range<PhysAddr>, 12> {
