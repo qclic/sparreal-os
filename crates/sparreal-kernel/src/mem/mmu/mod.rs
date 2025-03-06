@@ -38,6 +38,11 @@ pub fn is_mmu_enabled() -> bool {
     IS_MMU_ENABLED.load(Ordering::Relaxed)
 }
 
+/// 设置内核段偏移.
+///
+/// # Safety
+///
+/// 应在 cpu0 入口处执行
 pub unsafe fn set_text_va_offset(offset: usize) {
     unsafe {
         TEXT_OFFSET.set(offset);
