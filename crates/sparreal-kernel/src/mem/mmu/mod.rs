@@ -76,7 +76,7 @@ impl RsvRegion {
     ) -> Self {
         Self {
             range: range.into(),
-            name: name.as_ptr(),
+            name: name.as_ptr() as _,
             access,
             cache,
             kind,
@@ -95,7 +95,7 @@ impl RsvRegion {
     }
 
     pub fn name(&self) -> &'static str {
-        unsafe { CStr::from_ptr(self.name).to_str().unwrap() }
+        unsafe { CStr::from_ptr(self.name as _).to_str().unwrap() }
     }
 
     pub fn va_offset(&self) -> usize {

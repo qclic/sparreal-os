@@ -253,11 +253,11 @@ impl From<usize> for CPUId {
 #[repr(transparent)]
 pub struct CPUHardId(usize);
 
-impl CPUHardId {
-    pub(crate) unsafe fn new(id: usize) -> Self {
-        Self(id)
-    }
-}
+// impl CPUHardId {
+//     pub(crate) unsafe fn new(id: usize) -> Self {
+//         Self(id)
+//     }
+// }
 
 impl Display for CPUHardId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

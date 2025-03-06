@@ -11,7 +11,9 @@ mod boot;
 mod cache;
 mod context;
 mod debug;
+mod gic;
 mod paging;
+mod timer;
 mod trap;
 
 pub fn is_mmu_enabled() -> bool {

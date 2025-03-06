@@ -26,3 +26,4 @@ sparreal-kernel = { workspace = true, features = ["mmu"] }
 aarch64-cpu = "10.0"
 page-table-arm = "0.1"
 smccc = "0.1"
+arm-gic-driver = "0.6"
