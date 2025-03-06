@@ -45,6 +45,7 @@ pub fn is_mmu_enabled() -> bool {
 /// 应在 cpu0 入口处执行
 pub unsafe fn set_text_va_offset(offset: usize) {
     unsafe {
+        IS_MMU_ENABLED.set(false);
         TEXT_OFFSET.set(offset);
     }
 }
