@@ -10,7 +10,7 @@ use log::debug;
 
 use crate::{
     irq,
-    mem::PhysAddr,
+    mem::{PhysAddr, region::boot_regions},
     platform::{CPUHardId, CPUId, cpu_hard_id, cpu_list, kstack_size},
     platform_if::{MMUImpl, RegionKind},
     time::TimerData,
@@ -67,7 +67,7 @@ fn add_cpu(cpu: CPUHardId, idx: usize) {
         let id = CPUId::from(idx);
 
         let stack_bottom = if idx == 0 {
-            let region = MMUImpl::rsv_regions()
+            let region = boot_regions()
                 .into_iter()
                 .find(|o| matches!(o.kind, RegionKind::Stack))
                 .expect("stack region not found!");

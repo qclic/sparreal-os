@@ -1,7 +1,7 @@
 use aarch64_cpu::registers::*;
 use core::arch::global_asm;
 use log::*;
-use sparreal_kernel::{io::print::early_dbg, mem::VirtAddr};
+use sparreal_kernel::mem::VirtAddr;
 use sparreal_macros::aarch64_trap_handler;
 
 use super::context::Context;
@@ -22,8 +22,6 @@ fn handle_fiq(ctx: &Context) -> usize {
 
 #[aarch64_trap_handler(kind = "sync")]
 fn handle_sync(ctx: &Context) -> usize {
-    early_dbg("trap");
-
     let sp = ctx.sp;
     let esr = ESR_EL1.extract();
     let iss = esr.read(ESR_EL1::ISS);
@@ -57,8 +55,6 @@ fn handle_sync(ctx: &Context) -> usize {
 
 #[aarch64_trap_handler(kind = "serror")]
 fn handle_serror(ctx: &Context) -> usize {
-    early_dbg("trap");
-
     error!("SError exception:");
     let esr = ESR_EL1.extract();
     let _iss = esr.read(ESR_EL1::ISS);

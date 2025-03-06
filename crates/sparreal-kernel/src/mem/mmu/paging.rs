@@ -60,42 +60,51 @@ impl Access for HeapGuard<'_> {
 pub fn init_table() {
     debug!("Initializing page table...");
     let regions = platform::regsions();
+    for r in &regions {
+        trace!("{:<12}, [{}, {})", r.name(), r.range.start, r.range.end);
+    }
 
     unsafe {
-        let mut access = HeapGuard(ALLOCATOR.inner.lock());
+        {
+            let mut access = HeapGuard(ALLOCATOR.inner.lock());
 
-        let mut table = PageTableRef::create_empty(&mut access).unwrap();
+            let mut table = PageTableRef::create_empty(&mut access).unwrap();
 
-        for region in regions {
-            let size = region.range.end - region.range.start;
-            let vaddr = VirtAddr::from(region.range.start.raw() + region.kind.va_offset());
+            for region in &regions {
+                let size = region.range.end - region.range.start;
+                let vaddr = VirtAddr::from(region.range.start.raw() + region.kind.va_offset());
 
-            trace!(
-                "Map [{:>}] [{}, {}) -> [{}, {})",
-                region.name(),
-                vaddr,
-                vaddr + size,
-                region.range.start,
-                region.range.end,
-            );
+                debug!(
+                    "Map [{:<12}] [{}, {}) -> [{}, {})",
+                    region.name(),
+                    vaddr,
+                    vaddr + size,
+                    region.range.start,
+                    region.range.end,
+                );
 
-            table
-                .map_region(
-                    MapConfig::new(
-                        vaddr.into(),
-                        region.range.start.into(),
-                        region.access,
-                        region.cache,
-                    ),
-                    size,
-                    true,
-                    &mut access,
-                )
-                .unwrap()
+                table
+                    .map_region(
+                        MapConfig::new(
+                            vaddr.into(),
+                            region.range.start.into(),
+                            region.access,
+                            region.cache,
+                        ),
+                        size,
+                        true,
+                        &mut access,
+                    )
+                    .unwrap();
+            }
+
+            drop(access);
+
+            fence(Ordering::SeqCst);
+            debug!("Kernel table -> {:#x}", table.paddr());
+            set_kernel_table(table.paddr());
         }
-
-        fence(Ordering::SeqCst);
-        set_kernel_table(table.paddr());
+        drop(regions);
         flush_tlb_all();
     };
 }
