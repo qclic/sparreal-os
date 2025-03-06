@@ -74,15 +74,6 @@ pub fn init_table() {
                 let size = region.range.end - region.range.start;
                 let vaddr = VirtAddr::from(region.range.start.raw() + region.kind.va_offset());
 
-                debug!(
-                    "Map [{:<12}] [{}, {}) -> [{}, {})",
-                    region.name(),
-                    vaddr,
-                    vaddr + size,
-                    region.range.start,
-                    region.range.end,
-                );
-
                 table
                     .map_region(
                         MapConfig::new(
@@ -97,6 +88,8 @@ pub fn init_table() {
                     )
                     .unwrap();
             }
+
+            
 
             drop(access);
 
