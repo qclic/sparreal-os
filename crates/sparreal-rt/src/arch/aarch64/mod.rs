@@ -1,9 +1,11 @@
 use core::arch::asm;
 
 use aarch64_cpu::registers::*;
-use sparreal_kernel::platform_if::*;
+use context::{__tcb_switch, Context};
+use log::trace;
+use sparreal_kernel::{platform_if::*, task::TaskControlBlock};
 
-use crate::consts;
+use crate::{consts, mem::driver_registers};
 
 mod boot;
 mod cache;
@@ -29,15 +31,12 @@ impl Platform for PlatformImpl {
     }
 
     fn cpu_context_size() -> usize {
-        // size_of::<Context>()
-        todo!()
+        size_of::<Context>()
     }
 
     unsafe fn cpu_context_sp(ctx_ptr: *const u8) -> usize {
-        // let ctx: &Context = unsafe { &*(ctx_ptr as *const Context) };
-        // ctx.sp as _
-
-        0
+        let ctx: &Context = unsafe { &*(ctx_ptr as *const Context) };
+        ctx.sp as _
     }
 
     unsafe fn get_current_tcb_addr() -> *mut u8 {
@@ -52,27 +51,27 @@ impl Platform for PlatformImpl {
     ///
     /// `ctx_ptr` 是有效的上下文指针
     unsafe fn cpu_context_set_sp(ctx_ptr: *const u8, sp: usize) {
-        // unsafe {
-        //     let ctx = &mut *(ctx_ptr as *mut Context);
-        //     ctx.sp = sp as _;
-        // }
+        unsafe {
+            let ctx = &mut *(ctx_ptr as *mut Context);
+            ctx.sp = sp as _;
+        }
     }
 
     /// # Safety
     ///
     /// `ctx_ptr` 是有效的上下文指针
     unsafe fn cpu_context_set_pc(ctx_ptr: *const u8, pc: usize) {
-        // unsafe {
-        //     let ctx = &mut *(ctx_ptr as *mut Context);
-        //     ctx.pc = pc as _;
-        //     ctx.lr = pc as _;
-        // }
+        unsafe {
+            let ctx = &mut *(ctx_ptr as *mut Context);
+            ctx.pc = pc as _;
+            ctx.lr = pc as _;
+        }
     }
 
     unsafe fn cpu_context_switch(prev_ptr: *mut u8, next_ptr: *mut u8) {
-        // let next = TaskControlBlock::from(next_ptr);
-        // trace!("switch to: {:?}", unsafe { &*(next.sp as *const Context) });
-        // unsafe { __tcb_switch(prev_ptr, next_ptr) };
+        let next = TaskControlBlock::from(next_ptr);
+        trace!("switch to: {:?}", unsafe { &*(next.sp as *const Context) });
+        unsafe { __tcb_switch(prev_ptr, next_ptr) };
     }
 
     fn wait_for_interrupt() {
@@ -100,22 +99,11 @@ impl Platform for PlatformImpl {
         !DAIF.is_set(DAIF::I)
     }
 
-    fn on_boot_success() {
-        // match &global_val().platform_info {
-        //     PlatformInfoKind::DeviceTree(fdt) => {
-        //         if let Err(e) = psci::setup_method_by_fdt(fdt.get()) {
-        //             println!("{}", e);
-        //         }
-        //     }
-        // }
-    }
-
     fn dcache_range(op: CacheOp, addr: usize, size: usize) {
         cache::dcache_range(op, addr, size);
     }
 
     fn driver_registers() -> DriverRegisterSlice {
-        // DriverRegisterSlice::from_raw(driver_registers())
-        todo!()
+        DriverRegisterSlice::from_raw(driver_registers())
     }
 }

@@ -8,7 +8,7 @@ const DEFAULT_KERNEL_STACK_SIZE: usize = 8 * 1024 * 1024;
 const ENTRY_VADDR: u64 = 0xE00000000000;
 #[cfg(not(feature = "vm"))]
 // const ENTRY_VADDR: u64 = 0x40200000;
-const ENTRY_VADDR: u64 = 0xffff_fe00_0000_0000;
+const ENTRY_VADDR: u64 = 0xffff_e000_0000_0000;
 // const ENTRY_VADDR: u64 = 0x90000000;
 // const ENTRY_VADDR: u64 = 0xe000_0000_0000;
 

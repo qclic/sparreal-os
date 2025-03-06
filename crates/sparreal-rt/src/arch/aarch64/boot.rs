@@ -1,9 +1,7 @@
 use core::arch::{asm, naked_asm};
 
 use aarch64_cpu::{asm::barrier, registers::*};
-use sparreal_kernel::{
-    globals::PlatformInfoKind, io::print::early_dbgln, platform::shutdown, platform_if::CacheOp,
-};
+use sparreal_kernel::{globals::PlatformInfoKind, io::print::early_dbgln, platform::shutdown};
 
 use super::debug;
 use crate::mem::{self, clean_bss};

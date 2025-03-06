@@ -7,10 +7,7 @@ use core::{
 use aux_mini::AuxMini;
 use fdt_parser::Fdt;
 use pl011::Pl011;
-use sparreal_kernel::{
-    io::print::{early_dbg, early_dbg_hexln, early_dbgln},
-    mem::*,
-};
+use sparreal_kernel::{io::print::*, mem::*};
 
 mod aux_mini;
 mod pl011;

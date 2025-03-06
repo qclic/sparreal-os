@@ -137,3 +137,12 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
 
     rsv_regions
 }
+
+pub fn driver_registers() -> &'static [u8] {
+    unsafe extern "C" {
+        fn _sdriver();
+        fn _edriver();
+    }
+
+    unsafe { &*slice_from_raw_parts(_sdriver as *const u8, _edriver as usize - _sdriver as usize) }
+}

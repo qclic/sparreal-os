@@ -26,7 +26,7 @@ mod paging;
 pub use paging::init_table;
 pub use paging::iomap;
 
-pub const LINER_OFFSET: usize = 0xffff_ff00_0000_0000;
+pub const LINER_OFFSET: usize = 0xffff_f000_0000_0000;
 static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
 
 pub fn set_text_va_offset(offset: usize) {

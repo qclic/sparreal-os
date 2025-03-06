@@ -47,7 +47,6 @@ pub trait Platform {
     fn irq_all_disable();
     fn irq_all_is_enabled() -> bool;
 
-    fn on_boot_success() {}
     fn shutdown() -> !;
     fn debug_put(b: u8);
 
