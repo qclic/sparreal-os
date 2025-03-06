@@ -27,6 +27,10 @@ impl<T> OnceStatic<T> {
     pub unsafe fn get(&self) -> *mut T {
         self.0.get()
     }
+
+    pub fn get_ref(&self) -> &T {
+        unsafe { &*self.0.get() }
+    }
 }
 
 impl<T> Deref for OnceStatic<T> {

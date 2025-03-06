@@ -11,8 +11,10 @@ use crate::{
 
 pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(), &'static str> {
     early_dbgln("Booting up");
-    set_text_va_offset(text_va_offset);
-    unsafe { init_boot_rsv_region() };
+    unsafe {
+        set_text_va_offset(text_va_offset);
+        init_boot_rsv_region();
+    }
 
     if let Err(e) = unsafe { globals::setup(platform_info) } {
         early_dbgln("setup globle error: ");

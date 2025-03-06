@@ -71,9 +71,9 @@ unsafe extern "C" fn primary_entry() -> ! {
 fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
     clean_bss();
     enable_fp();
-    mem::mmu::set_text_va_offset(text_va);
-    debug::init_by_fdt(fdt);
     unsafe {
+        mem::mmu::set_text_va_offset(text_va);
+        debug::init_by_fdt(fdt);
         asm!(
             "
         LDR      x0, =vector_table_el1
@@ -87,7 +87,7 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
         1 => early_dbgln("EL1"),
         2 => early_dbgln("EL2"),
         3 => early_dbgln("EL3"),
-        _ => panic!("unknown EL"),
+        _ => unreachable!(),
     }
 
     unsafe {

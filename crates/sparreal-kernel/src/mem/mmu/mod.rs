@@ -27,7 +27,7 @@ pub use paging::init_table;
 pub use paging::iomap;
 
 pub const LINER_OFFSET: usize = 0xffff_f000_0000_0000;
-static TEXT_OFFSET: AtomicUsize = AtomicUsize::new(0);
+static TEXT_OFFSET: OnceStatic<usize> = OnceStatic::new(0);
 static IS_MMU_ENABLED: AtomicBool = AtomicBool::new(false);
 
 pub fn set_mmu_enabled() {
@@ -38,11 +38,13 @@ pub fn is_mmu_enabled() -> bool {
     IS_MMU_ENABLED.load(Ordering::Relaxed)
 }
 
-pub fn set_text_va_offset(offset: usize) {
-    TEXT_OFFSET.store(offset, Ordering::Release);
+pub unsafe fn set_text_va_offset(offset: usize) {
+    unsafe {
+        TEXT_OFFSET.set(offset);
+    }
 }
 pub fn get_text_va_offset() -> usize {
-    TEXT_OFFSET.load(Ordering::Relaxed)
+    *TEXT_OFFSET.get_ref()
 }
 
 struct PageHeap(Heap<32>);
@@ -130,7 +132,7 @@ pub enum RegionKind {
 impl RegionKind {
     pub fn va_offset(&self) -> usize {
         match self {
-            RegionKind::KImage => TEXT_OFFSET.load(Ordering::Relaxed),
+            RegionKind::KImage => get_text_va_offset(),
             RegionKind::Stack => STACK_BOTTOM - globals::cpu_global().stack.start.raw(),
             RegionKind::Other => LINER_OFFSET,
         }
