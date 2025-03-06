@@ -39,7 +39,7 @@ pub fn is_mmu_enabled() -> bool {
 }
 
 pub fn set_text_va_offset(offset: usize) {
-    TEXT_OFFSET.store(offset, Ordering::SeqCst);
+    TEXT_OFFSET.store(offset, Ordering::Release);
 }
 pub fn get_text_va_offset() -> usize {
     TEXT_OFFSET.load(Ordering::Relaxed)
