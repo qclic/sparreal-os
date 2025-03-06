@@ -26,7 +26,6 @@ pub fn start(text_va_offset: usize, platform_info: PlatformInfoKind) -> Result<(
     set_kernel_table(table);
 
     let stack_top = stack_top();
-    // let stack_top = MMUImpl::rsv_regions().into_iter().find(|a| matches!( a.kind, RegionKind::Stack)).unwrap().range.end.raw();
 
     let jump_to = __start as usize + text_va_offset;
 

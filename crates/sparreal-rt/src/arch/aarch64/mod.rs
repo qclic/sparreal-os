@@ -16,6 +16,11 @@ mod paging;
 mod timer;
 mod trap;
 
+#[cfg(not(feature = "vm"))]
+pub fn is_mmu_enabled() -> bool {
+    SCTLR_EL1.matches_any(&[SCTLR_EL1::M::Enable])
+}
+#[cfg(feature = "vm")]
 pub fn is_mmu_enabled() -> bool {
     SCTLR_EL2.matches_any(&[SCTLR_EL2::M::Enable])
 }

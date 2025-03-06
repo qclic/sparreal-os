@@ -6,7 +6,9 @@ use core::{
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
-use super::{Phys, PhysAddr, PhysCRange, STACK_BOTTOM, Virt, once::OnceStatic};
+use super::{
+    Phys, PhysAddr, PhysCRange, STACK_BOTTOM, Virt, once::OnceStatic, region::boot_regions,
+};
 pub use arrayvec::ArrayVec;
 use buddy_system_allocator::Heap;
 use page_table_generic::err::PagingError;
@@ -39,6 +41,9 @@ pub fn is_mmu_enabled() -> bool {
 pub fn set_text_va_offset(offset: usize) {
     TEXT_OFFSET.store(offset, Ordering::SeqCst);
 }
+pub fn get_text_va_offset() -> usize {
+    TEXT_OFFSET.load(Ordering::Relaxed)
+}
 
 struct PageHeap(Heap<32>);
 
@@ -58,7 +63,8 @@ impl page_table_generic::Access for PageHeap {
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct RsvRegion {
+pub struct BootRegion {
+    // 链接地址
     pub range: PhysCRange,
     pub name: *const u8,
     pub access: AccessSetting,
@@ -66,7 +72,7 @@ pub struct RsvRegion {
     pub kind: RegionKind,
 }
 
-impl RsvRegion {
+impl BootRegion {
     pub fn new(
         range: Range<PhysAddr>,
         name: &'static CStr,
@@ -104,6 +110,7 @@ impl RsvRegion {
                 if cpu_inited() {
                     self.kind.va_offset()
                 } else {
+                    // cpu0
                     STACK_BOTTOM - self.range.start.raw()
                 }
             }
@@ -139,10 +146,11 @@ impl<T> From<Virt<T>> for Phys<T> {
 const MB: usize = 1024 * 1024;
 pub fn new_boot_table() -> Result<usize, &'static str> {
     let mut access = PageHeap(Heap::empty());
+    let main_mem = global_val().main_memory.clone();
 
-    let tmp_end = global_val().main_memory.end;
-    let tmp_size = tmp_end - global_val().main_memory.start.align_up(MB);
-    let tmp_pt = (global_val().main_memory.end - tmp_size / 2).raw();
+    let tmp_end = main_mem.end;
+    let tmp_size = tmp_end - main_mem.start.align_up(MB);
+    let tmp_pt = (main_mem.end - tmp_size / 2).raw();
 
     early_dbg_range("page table allocator", tmp_pt..tmp_end.raw());
     unsafe { access.0.add_to_heap(tmp_pt, tmp_end.raw()) };
@@ -151,7 +159,7 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
         PageTableRef::create_empty(&mut access).map_err(|_| "page table allocator no memory")?;
 
     for memory in platform::phys_memorys() {
-        let region = RsvRegion::new(
+        let region = BootRegion::new(
             memory,
             c"memory",
             AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
@@ -161,11 +169,11 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
         map_region(&mut table, 0, &region, &mut access);
     }
 
-    for region in MMUImpl::rsv_regions() {
-        map_region(&mut table, region.va_offset(), &region, &mut access);
+    for region in boot_regions() {
+        map_region(&mut table, region.va_offset(), region, &mut access);
     }
 
-    let main_memory = RsvRegion::new(
+    let main_memory = BootRegion::new(
         global_val().main_memory.clone(),
         c"main memory",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
@@ -191,7 +199,7 @@ pub fn new_boot_table() -> Result<usize, &'static str> {
 fn map_region(
     table: &mut paging::PageTableRef<'_>,
     va_offset: usize,
-    region: &RsvRegion,
+    region: &BootRegion,
     access: &mut PageHeap,
 ) {
     let addr = region.range.start;

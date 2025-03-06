@@ -174,6 +174,9 @@ pub type PhysAddr = Phys<u8>;
 pub type VirtCRange = CRange<VirtAddr>;
 pub type PhysCRange = CRange<PhysAddr>;
 
+/// 运行地址
+pub struct RunAddr(usize);
+
 pub const fn align_offset(addr: usize, align: usize) -> usize {
     addr & (align - 1)
 }

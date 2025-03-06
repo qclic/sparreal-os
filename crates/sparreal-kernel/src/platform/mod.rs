@@ -108,11 +108,11 @@ pub fn memory_main_available(
     Ok(start..main_memory.end)
 }
 
-pub fn regsions() -> Vec<RsvRegion> {
+pub fn regsions() -> Vec<BootRegion> {
     let mut ret = boot_regions().to_vec();
 
     let main_available = memory_main_available(&global_val().platform_info).unwrap();
-    ret.push(RsvRegion::new(
+    ret.push(BootRegion::new(
         main_available.clone(),
         c"main mem",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
@@ -125,7 +125,7 @@ pub fn regsions() -> Vec<RsvRegion> {
             continue;
         }
 
-        ret.push(RsvRegion::new(
+        ret.push(BootRegion::new(
             memory,
             c"memory",
             AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,

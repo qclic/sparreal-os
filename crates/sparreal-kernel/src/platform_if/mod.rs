@@ -61,7 +61,12 @@ pub use crate::mem::mmu::*;
 #[cfg(feature = "mmu")]
 #[api_trait]
 pub trait MMU {
-    fn rsv_regions() -> BootRsvRegionVec;
+    /// 启动所需的内存范围
+    ///
+    /// # Safety
+    ///
+    /// `MMU` 开启以前，链接地址是物理地址，开启后，为虚拟地址，应在`MMU`开启前调用并保存，开启`MMU`后若调用会错误的使用虚拟地址作为返回值
+    unsafe fn boot_regions() -> BootRsvRegionVec;
     fn set_kernel_table(addr: usize);
     fn get_kernel_table() -> usize;
     fn set_user_table(addr: usize);

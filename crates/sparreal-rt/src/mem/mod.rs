@@ -5,10 +5,26 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use memory_addr::MemoryAddr;
 use sparreal_kernel::mem::mmu::*;
 pub use sparreal_kernel::mem::*;
-use sparreal_kernel::platform_if::RsvRegion;
+use sparreal_kernel::platform_if::BootRegion;
+
 
 static FDT_ADDR: AtomicUsize = AtomicUsize::new(0);
 static FDT_LEN: AtomicUsize = AtomicUsize::new(0);
+
+macro_rules! pa_of {
+    ($name:ident) => {{
+        unsafe extern "C" {
+            static $name: u8;
+        }
+        let mut pa = &raw const $name as *const u8 as usize;
+
+        if crate::arch::is_mmu_enabled() {
+            pa -= get_text_va_offset()
+        }
+
+        PhysAddr::new(pa)
+    }};
+}
 
 pub(crate) unsafe fn save_fdt(ptr: *mut u8) -> Option<NonNull<u8>> {
     let fdt_addr = _stack_top as usize;
@@ -50,7 +66,6 @@ macro_rules! fn_ld_range {
     };
 }
 
-fn_ld_range!(text);
 fn_ld_range!(rodata);
 fn_ld_range!(data);
 fn_ld_range!(bss);
@@ -83,17 +98,17 @@ fn fdt_addr_range() -> Option<Range<PhysAddr>> {
     }
 }
 
-pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
-    let mut rsv_regions = ArrayVec::<RsvRegion, N>::new();
-    rsv_regions.push(RsvRegion::new(
-        slice_to_phys_range(text()),
+pub fn rsv_regions<const N: usize>() -> ArrayVec<BootRegion, N> {
+    let mut rsv_regions = ArrayVec::<BootRegion, N>::new();
+    rsv_regions.push(BootRegion::new(
+        pa_of!(_stext)..pa_of!(_etext),
         c".text",
         AccessSetting::Read | AccessSetting::Execute,
         CacheSetting::Normal,
         RegionKind::KImage,
     ));
 
-    rsv_regions.push(RsvRegion::new(
+    rsv_regions.push(BootRegion::new(
         slice_to_phys_range(rodata()),
         c".rodata",
         AccessSetting::Read | AccessSetting::Execute,
@@ -101,7 +116,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         RegionKind::KImage,
     ));
 
-    rsv_regions.push(RsvRegion::new(
+    rsv_regions.push(BootRegion::new(
         slice_to_phys_range(data()),
         c".data",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
@@ -109,7 +124,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         RegionKind::KImage,
     ));
 
-    rsv_regions.push(RsvRegion::new(
+    rsv_regions.push(BootRegion::new(
         slice_to_phys_range(bss()),
         c".bss",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
@@ -117,7 +132,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
         RegionKind::KImage,
     ));
 
-    rsv_regions.push(RsvRegion::new(
+    rsv_regions.push(BootRegion::new(
         slice_to_phys_range(stack_cpu0()),
         c".stack",
         AccessSetting::Read | AccessSetting::Write | AccessSetting::Execute,
@@ -126,7 +141,7 @@ pub fn rsv_regions<const N: usize>() -> ArrayVec<RsvRegion, N> {
     ));
 
     if let Some(fdt) = fdt_addr_range() {
-        rsv_regions.push(RsvRegion::new(
+        rsv_regions.push(BootRegion::new(
             fdt,
             c"fdt",
             AccessSetting::Read,

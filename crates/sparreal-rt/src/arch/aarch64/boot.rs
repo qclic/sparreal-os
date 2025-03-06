@@ -1,7 +1,7 @@
 use core::arch::{asm, naked_asm};
 
 use aarch64_cpu::{asm::barrier, registers::*};
-use sparreal_kernel::{globals::PlatformInfoKind, io::print::early_dbgln, platform::shutdown};
+use sparreal_kernel::{globals::PlatformInfoKind, io::print::*, platform::shutdown};
 
 use super::debug;
 use crate::mem::{self, clean_bss};
@@ -71,13 +71,16 @@ unsafe extern "C" fn primary_entry() -> ! {
 fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
     clean_bss();
     enable_fp();
+    mem::mmu::set_text_va_offset(text_va);
     debug::init_by_fdt(fdt);
     unsafe {
         asm!(
             "
         LDR      x0, =vector_table_el1
+        SUB      x0,  x0, {}
         MSR      VBAR_EL1, x0
-        "
+        ",
+        in(reg) text_va,
         );
     }
     match CurrentEL.read(CurrentEL::EL) {

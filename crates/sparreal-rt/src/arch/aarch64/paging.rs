@@ -10,11 +10,11 @@ pub struct PageTableImpl;
 
 #[api_impl]
 impl MMU for PageTableImpl {
-    fn rsv_regions() -> BootRsvRegionVec {
+    unsafe fn boot_regions() -> BootRsvRegionVec {
         let mut ret = crate::mem::rsv_regions();
         let debug_reg = PhysAddr::new(super::debug::reg()).align_down(0x1000);
 
-        ret.push(RsvRegion::new(
+        ret.push(BootRegion::new(
             debug_reg..debug_reg + 0x1000,
             c"debug_uart",
             AccessSetting::Read | AccessSetting::Write,
