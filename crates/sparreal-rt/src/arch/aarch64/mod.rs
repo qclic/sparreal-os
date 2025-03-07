@@ -13,6 +13,7 @@ mod context;
 mod debug;
 mod gic;
 mod paging;
+mod power;
 mod timer;
 mod trap;
 

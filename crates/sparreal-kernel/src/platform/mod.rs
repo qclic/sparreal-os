@@ -1,5 +1,7 @@
 use alloc::{string::String, vec::Vec};
+use core::hint::spin_loop;
 use core::{ffi::CStr, fmt::Display, ops::Range};
+use log::error;
 
 use fdt::Fdt;
 use rdrive::register::DriverRegister;
@@ -144,7 +146,24 @@ pub fn phys_memorys() -> ArrayVec<Range<PhysAddr>, 12> {
 }
 
 pub fn shutdown() -> ! {
-    PlatformImpl::shutdown()
+    if let Some(power) = rdrive::read(|m| m.power.all()).first() {
+        power
+            .1
+            .upgrade()
+            .unwrap()
+            .spin_try_borrow_by(0.into())
+            .shutdown();
+        loop {
+            spin_loop();
+        }
+    } else {
+        error!("no power driver");
+        loop {
+            wait_for_interrupt();
+        }
+    }
+
+    // PlatformImpl::shutdown()
 }
 
 pub fn wait_for_interrupt() {

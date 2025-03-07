@@ -119,7 +119,6 @@ fn parse_irq_config(parent: Phandle, interrupts: &[Vec<u32>]) -> Option<IrqInfo>
                 irq_parent = probe_data.phandle_2_device_id(parent);
                 Some(probe_data.parse_irq(parent, raw))
             }
-            ProbeData::Static => None,
         }) {
             Some(Ok(cfg)) => cfgs.push(cfg),
             _ => continue,
