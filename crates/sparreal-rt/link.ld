@@ -23,11 +23,10 @@ SECTIONS
         *(.rodata .rodata.*)
         *(.srodata .srodata.*)
         *(.sdata2 .sdata2.*)
-        . = ALIGN(4K);
-        _erodata = .;
     } 
    
     .data : ALIGN(4K) {
+        _erodata = .;
         _sdata = .;
         *(.data.boot .data.boot.*)
         . = ALIGN(4K);

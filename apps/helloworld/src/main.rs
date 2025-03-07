@@ -13,11 +13,15 @@ use sparreal_kernel::{
     time::{self, spin_delay},
 };
 
-
-
 #[entry]
 fn main() {
     info!("Hello, world!");
+
+    unsafe {
+        let a = 0x1111;
+        let p = a as *const u8;
+        let c = p.read_volatile();
+    }
 
     time::after(Duration::from_secs(1), || {
         info!("Timer callback");
