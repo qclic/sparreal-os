@@ -1,6 +1,5 @@
 use core::error::Error;
 
-use aarch64_cpu::registers::ESR_EL3::EC::SMC64;
 use alloc::{boxed::Box, format, vec::Vec};
 use log::{debug, error};
 use smccc::{Hvc, Smc, psci};
