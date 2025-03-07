@@ -68,7 +68,6 @@ jobs:
 
     - name: Test bare-test simple_test
       if: ${{ always() }}
-      working-directory: app/simple_test
       run: CARGO_BUILD_TARGET=aarch64-unknown-none cargo test -test test1 -- --show-output
 
     - name: Test sparreal-macros

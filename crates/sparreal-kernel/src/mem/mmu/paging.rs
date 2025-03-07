@@ -89,8 +89,6 @@ pub fn init_table() {
                     .unwrap();
             }
 
-            
-
             drop(access);
 
             fence(Ordering::SeqCst);
