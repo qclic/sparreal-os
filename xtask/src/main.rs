@@ -4,6 +4,9 @@
 #[cfg(not(target_os = "none"))]
 mod cli;
 
+#[cfg(target_os = "none")]
+mod dump;
+
 #[cfg(not(target_os = "none"))]
 fn main() {
     cli::main();
